@@ -119,6 +119,8 @@ $epic_line
 |---|---|
 
 ## Definition of done
+- [ ] Audit agent passes (spawn \`audit\` agent to verify rule compliance)
+- [ ] \`scripts/harness/full-check\` passes
 - TODO
 
 ## Decision log

@@ -50,9 +50,9 @@ Steps should be checklists that can move from planned to completed as the work p
 
 ## Completion Standard
 The current repo standard is:
+- the `audit` agent passes (verifies compliance with `.claude/rules/`)
 - the appropriate tests for the change are present and passing
-- `./mvnw -q verify` passes
-- runtime startup succeeds with `docker compose up -d && ./mvnw spring-boot:run`
+- `scripts/harness/full-check` passes (build + tests + doc-lint + smoke-startup + openapi-drift)
 
 If the work changes architecture, module ownership, validation behavior, or repo process, update the related docs as part of the same plan.
 

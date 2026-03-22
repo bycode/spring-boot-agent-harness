@@ -36,6 +36,9 @@ Every code change must have passing tests. See `.claude/rules/testing.md` for th
 `scripts/harness/full-check` is the MANDATORY final step of every plan. No plan is complete until full-check passes.
 OpenAPI drift is part of that contract: keep `docs/generated/openapi.json` committed and refresh it with `scripts/harness/generate-openapi` whenever endpoint behavior changes.
 
+## Audit
+After completing code changes for a feature or fix, spawn the `audit` agent to verify compliance with `.claude/rules/` before marking work done. This is mandatory for planned work and strongly recommended for ad-hoc changes.
+
 ## Learnings
 Before starting work, scan `docs/learnings/LEARNINGS.md` for relevant gotchas.
 

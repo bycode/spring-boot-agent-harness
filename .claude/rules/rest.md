@@ -49,6 +49,11 @@ Rules:
 - No HTTP status codes or error codes in domain exceptions.
 - No catching exceptions in use cases to wrap them.
 
+**Accepted when:**
+- CSRF disabled globally → stateless JWT API with no cookie-based sessions (this project's security posture).
+- Missing `@Valid` on `@RequestBody` → endpoint intentionally accepts unvalidated payload (must be documented in comment).
+- Controller returns domain type directly → reference module `notepad` may simplify mapping for trivial cases; real modules must use DTOs.
+
 ## OpenAPI annotations (mandatory)
 
 Every controller must have `@Tag`. Every endpoint must have `@Operation` and `@ApiResponse`. Every request/response DTO must have `@Schema`. When adding, modifying, or removing endpoints, update these annotations to keep the generated spec in sync with the code. The committed spec at `docs/generated/openapi.json` is validated by `scripts/harness/check-openapi-drift` — stale specs fail `full-check`.
