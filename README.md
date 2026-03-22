@@ -1,18 +1,35 @@
-# Spring Boot 4 Template
+# spring-boot-agent-harness
+A Java 25 / Spring Boot 4 starter for developers who want to work with AI coding agents. The repo ships enforceable rules, module contracts, validation gates, and execution plans that make agents productive instead of dangerous.
+OpenAI calls this approach harness engineering: https://openai.com/index/harness-engineering/
 
-Java 25 Spring Boot 4 starter with an example CRUD module, providing an harness for claude code (codex also works, but is lagging behind in options for creating such a harness)
+Clone it, run `init-template` to make it yours, and start building.
 
-## What's included
+About the choice for vertical slices with Spring Modulith:
+Context window management matters for coding agents. Spring Modulith enforces hard module boundaries, an agent only needs the module it's changing plus the public contracts of its
+dependencies, not the entire codebase.
 
-- **Java 25 + Spring Boot 4** with virtual threads
-- **Spring Modulith** vertical modules with enforced boundaries
-- **Spring Data JDBC** (no JPA)
-- **PostgreSQL + Flyway** migrations
-- **Reference module** with a notes API (`POST /api/notes`, `GET /api/notes/{id}`)
-- **Quality gates** via Spotless, PMD, SpotBugs, JaCoCo, ArchUnit, Error Prone + NullAway
-- **Null safety** via JSpecify 1.0 annotations enforced at compile time
-- **JWT auth** via Spring Security OAuth2 Resource Server
-- **OpenAPI/Swagger** at `/swagger-ui.html`
+## The harness
+This one gives you infrastructure for agent-assisted development, while also making some very opinionated Spring Boot choices:
+
+- **`.claude/rules/`** path-based rules, automatically injected whenever relevant files are touched. Unlike subagents or skills, these don't need to be explicitly invoked.
+- **Module contracts** (`.claude/rules/modules/`) pin ownership, public API, dependencies, and validation commands per module. Agents know what's off-limits
+- **Audit agent** reviews code against rules after changes. Skips what the compiler and linters already enforce
+- **Harness scripts** (`full-check`, `fast-check`, `new-module`) give agents deterministic validation — green or red, no "looks good to me"
+- **Execution plans** (`docs/exec-plans/`) persist multi-step work so agents resume across sessions without losing context
+- **Learnings** (`docs/learnings/`) accumulate framework gotchas. Agents check before starting work
+
+Optimized for [Claude Code](https://claude.com/claude-code). Works with Codex via `AGENTS.md`.
+
+## The stack
+- **Java 25 + Spring Boot 4** — Virtual threads enabled
+- **Spring Modulith** — Vertical modules with boundaries enforced at build time
+- **JSpecify + NullAway** — Null safety at compile time via Error Prone
+- **ArchUnit** — Architecture conventions as build failures
+- **Quality gates** — Spotless, PMD, SpotBugs, JaCoCo, OpenAPI drift detection
+- **Reference module** — Full notes CRUD demonstrating the module structure at every test tier
+
+Interchangeable (just realistic filler — could be swapped for anything):
+* Spring Data JDBC, PostgreSQL + Flyway, JWT auth
 
 ## Prerequisites
 
@@ -30,7 +47,7 @@ Maven is included via the wrapper (`./mvnw`).
 ## Quick start
 
 ```bash
-git clone <repo-url> && cd <repo-name>
+git clone <repo-url> && cd spring-boot-agent-harness
 scripts/harness/run-app
 ```
 
@@ -63,6 +80,7 @@ scripts/harness/new-module           # Scaffold a new module
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) for module structure, persistence rules, and test pyramid
 - [CLAUDE.md](CLAUDE.md) for [Claude Code](https://claude.com/claude-code) integration
+- [docs/design-docs/core-beliefs.md](docs/design-docs/core-beliefs.md) for the engineering principles behind the choices
 
 ## License
 
