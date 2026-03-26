@@ -1,57 +1,61 @@
 ---
 paths:
   - "docs/exec-plans/**"
-  - "src/**"
 ---
 
 # Execution plans
 
-Non-trivial work requires an exec plan BEFORE writing code. See `docs/PLANS.md` for full guidance.
+## Epics
 
-## When to create a plan
+When work spans multiple plans, persist an epic file BEFORE creating any child plans.
 
-Create a `PLAN-NNNN-topic.md` before editing when:
-- the change spans multiple files
-- the change is architectural
-- the change needs tracked decisions, risks, or staged execution
-- the work would be hard to resume from code diff alone
+Named `EPIC-NNNN-topic.md`. Use next available sequence number (glob both `active/` and `completed/` to find the highest existing `EPIC-NNNN`).
 
-Create an `EPIC-NNNN-topic.md` first when the work spans multiple plans or is cross-cutting.
+### Required sections
 
-## Creating plans
+- Context (why this epic exists)
+- Key architectural decisions (table: Decision, Choice, Rationale)
+- Execution plans (list of child PLANs with dependencies and parallelism)
+- Definition of done
+- Tech debt introduced
 
-Always use the scaffold script — never create plan files manually:
+### Ordering constraint
 
-```bash
-scripts/harness/new-exec-plan plan <topic-slug>          # standalone plan
-scripts/harness/new-exec-plan plan <topic-slug> EPIC-XXXX # plan under an epic
-scripts/harness/new-exec-plan epic <topic-slug>           # new epic
-```
+1. Persist the EPIC file to `docs/exec-plans/active/` first.
+2. Then create child PLAN files (they reference the epic).
+3. When all child plans are completed, move the EPIC to `docs/exec-plans/completed/`.
 
-Plan mode's internal plan file is supplementary — the exec plan in `docs/exec-plans/active/` is the durable record.
+## Plan file format
 
-## Completion checklist
+Named `PLAN-NNNN-topic.md`. Use next available sequence number.
 
-When ALL steps in a plan's checklist are done AND the definition-of-done criteria pass:
+**MANDATORY**: Before assigning a plan number, glob `docs/exec-plans/active/` and `docs/exec-plans/completed/` to find the highest existing `PLAN-NNNN` number and increment by one. Never assume the next number — always check.
 
-1. Mark every `- [ ]` as `- [x]` in the plan file
-2. **Move the plan file** from `docs/exec-plans/active/` to `docs/exec-plans/completed/`
-3. Commit the move as part of the final commit (or as a dedicated commit)
+### Required sections
 
-The plan is NOT complete until the file lives in `completed/`. Marking checkboxes without moving the file is incomplete work.
+- Goal
+- Non-goals
+- Approach
+- Steps (checklist -- mark `- [x]` as completed)
+- Decision log (append-only -- record every non-trivial choice and why)
+- Risks & mitigations
+- Definition of done
+- Tech debt introduced (list workarounds/deferred work, or "None")
 
-## When committing planned work
+## Execution discipline
 
-Before creating commits for work tracked by an exec plan, verify:
-- Is there an active plan in `docs/exec-plans/active/` for this work?
-- If yes, has every step been completed?
-- If yes, move the plan to `completed/` and include the move in the commit
+While executing a plan, treat the plan file as a living document:
 
-Never commit planned work while the plan still sits in `active/`.
+1. **Before starting a step**: mark it `- [~]` (in progress).
+2. **After completing a step**: mark it `- [x]`.
+3. **Decision log**: append a row immediately when making a non-trivial choice (library version, alternative approach, workaround). Do not batch these for later.
+4. **If a step is skipped or changed**: update the step text and add a decision log entry explaining why.
 
-## Working rules
+## Finalization
 
-- Persist the approved plan before editing code.
-- Keep checklist state current as work progresses.
-- Append decision-log entries when you make a real trade-off.
-- Record tech debt when you knowingly leave a compromise behind.
+When all steps are done:
+
+1. Verify every step is `- [x]` or explicitly marked skipped with rationale.
+2. Check decision log for tech debt — append to `docs/exec-plans/TECH-DEBT-TRACKER.md` if any.
+3. Set front-matter `status: completed`.
+4. Move file from `docs/exec-plans/active/` to `docs/exec-plans/completed/`.

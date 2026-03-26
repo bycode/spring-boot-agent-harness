@@ -28,9 +28,11 @@ Java 25, Spring Boot 4, Spring Data JDBC (no JPA), PostgreSQL, Flyway migrations
 Top-level packages under `nl.jinsoo.template` are business modules (Spring Modulith). See [`.claude/rules/modulith.md`](.claude/rules/modulith.md) for the full module structure, creation checklist, and cross-module rules. Every module must have a contract at `.claude/rules/modules/<module-name>.md`.
 
 ## Plans
-For non-trivial work, persist a plan to `docs/exec-plans/active/` BEFORE writing code. This is mandatory — not optional, not skippable by plan mode or any other workflow. The exec plan in `docs/exec-plans/active/` is the durable record; plan mode's internal plan file is supplementary.
+**TRIGGER**: For multi-file or architectural changes, persist the approved plan to `docs/exec-plans/active/PLAN-NNNN-topic.md` BEFORE writing any code. When work spans multiple plans, persist an `EPIC-NNNN-topic.md` file FIRST, before creating any child plans. This applies whether the plan comes from plan mode, a user message, or your own proposal. Always include a decision log and tech debt section. See `.claude/rules/exec-plans.md` for format.
 
-Use `scripts/harness/new-exec-plan` to scaffold. See [`docs/PLANS.md`](docs/PLANS.md) for full guidance including when to create epics vs. plans. See [`.claude/rules/exec-plans.md`](.claude/rules/exec-plans.md) for creation and completion rules. Move completed plans to `docs/exec-plans/completed/`.
+**TRIGGER**: When you make a trade-off, choose between alternatives, suppress a rule, or deviate from the plan — append an entry to the relevant plan's decision log immediately.
+
+**TRIGGER**: When all tasks in a plan are complete, move it from `docs/exec-plans/active/` to `docs/exec-plans/completed/`
 
 ## Testing
 Every code change must have passing tests. See `.claude/rules/testing.md` for the full test pyramid.
