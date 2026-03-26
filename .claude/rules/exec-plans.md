@@ -25,11 +25,29 @@ Named `EPIC-NNNN-topic.md`. Use next available sequence number (glob both `activ
 2. Then create child PLAN files (they reference the epic).
 3. When all child plans are completed, move the EPIC to `docs/exec-plans/completed/`.
 
+## Creating plans and epics
+
+**MANDATORY**: Always use `scripts/harness/new-exec-plan` to create plan and epic files. Never create them by hand.
+
+```bash
+# Create a plan
+scripts/harness/new-exec-plan plan <topic-slug>
+
+# Create a plan under an epic
+scripts/harness/new-exec-plan plan <topic-slug> EPIC-XXXX
+
+# Create an epic
+scripts/harness/new-exec-plan epic <topic-slug>
+
+# Dry run (preview filename without creating)
+scripts/harness/new-exec-plan --dry-run plan <topic-slug>
+```
+
+The script auto-assigns the next sequence number and generates a template with every required section. Fill in the template — do not skip sections, do not restructure the file.
+
 ## Plan file format
 
-Named `PLAN-NNNN-topic.md`. Use next available sequence number.
-
-**MANDATORY**: Before assigning a plan number, glob `docs/exec-plans/active/` and `docs/exec-plans/completed/` to find the highest existing `PLAN-NNNN` number and increment by one. Never assume the next number — always check.
+Named `PLAN-NNNN-topic.md`. Sequence number is assigned by the script.
 
 ### Required sections
 
