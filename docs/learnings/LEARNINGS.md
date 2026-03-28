@@ -64,6 +64,12 @@ These are permanently relevant for the current stack (Java 25, Spring Boot 4, Sp
 - Fix: add `-XX:+EnableDynamicAgentLoading` to the Surefire `<argLine>` to suppress warnings.
 - Long-term: configure Mockito as a static agent via `<javaagentModule>` when the Mockito team ships static agent support.
 
+### Method validation: do NOT use @Validated on controllers (2026-03-28)
+
+- In Spring MVC 6.1+ / Spring Boot 4, constraint annotations (`@Min`, `@Max`, `@Size`, etc.) on `@RequestParam` / `@PathVariable` parameters are validated natively by the MVC framework **without** `@Validated` on the controller class. Violations throw `HandlerMethodValidationException`, which the ProblemDetail handler converts to 400.
+- Adding `@Validated` to the controller class activates AOP-based validation via `MethodValidationPostProcessor` instead, which throws `ConstraintViolationException`. That exception is **not** auto-handled as 400 — it falls through to the catch-all handler and returns 500.
+- Rule: never put `@Validated` on `@RestController` classes. Just annotate method parameters with Jakarta Validation constraints and let the MVC framework handle them.
+
 ### @Transactional and non-bean use cases (2026-03-16)
 
 - `@Transactional` on UseCase classes has no effect because use cases are plain Java objects created via `new` in `@Configuration` classes. Only Spring-managed beans (Facade/Service returned from `@Bean`) support AOP-based `@Transactional`. Place `@Transactional` on Facade/Service methods.
