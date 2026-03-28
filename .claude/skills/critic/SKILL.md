@@ -73,6 +73,23 @@ This is not optional — your critique must be informed by what the industry is 
 
 **Do this in a subagent.** Spawn research in a subagent to keep main context clean. The subagent should return a concise summary of findings relevant to the critique, with source URLs.
 
+## Self-iteration
+
+Before presenting your critique to the user, run 3 internal passes. Only the final pass becomes visible output — passes 1 and 2 are your private drafting process.
+
+**Pass 1 — Initial critique.** Generate your full critique following all the rules above. Write it out completely in your thinking.
+
+**Pass 2 — Challenge yourself.** Re-read your pass 1 critique and attack it:
+- Which points are genuine risks vs. manufactured objections? Cut the manufactured ones.
+- Where did you hedge instead of taking a position? Sharpen those.
+- What did you *not* think about? What angles are missing entirely?
+- Did you fall into any of the "what to avoid" traps (sycophancy, hedge words, exhaustive lists, performing criticism)?
+- Are your points actually specific to *this* topic, or could they apply to anything? Generic points get cut.
+
+**Pass 3 — Final synthesis.** Produce the critique the user will see. This version should be noticeably sharper than pass 1: fewer points but deeper, more specific, harder to dismiss. Incorporate the missing angles from pass 2. This is what you output.
+
+Do not mention the passes, show your drafts, or reference this process to the user. The output should read as a single, confident critique — not as a revision history.
+
 ## The debate loop
 
 After your initial critique, the user will push back, clarify, or ask you to go deeper. When they do:
