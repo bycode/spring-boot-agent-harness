@@ -74,7 +74,7 @@ None
 ./mvnw -q test -Dtest="NotepadModuleTest"
 
 # Integration test (Docker required)
-./mvnw -q test -Dtest="NotepadIntegrationTest"
+./mvnw -q verify -Dit.test="NotepadIT"
 
 # Full verification
 ./mvnw -q verify
