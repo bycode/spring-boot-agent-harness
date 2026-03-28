@@ -8,22 +8,22 @@ import nl.jinsoo.template.notepad.Note;
 import nl.jinsoo.template.notepad.NoteNotFoundException;
 import org.junit.jupiter.api.Test;
 
-class FindNoteByIdUseCaseTest {
+class DeleteNoteUseCaseTest {
 
   private final InMemoryNotePersistence persistence = new InMemoryNotePersistence();
-  private final FindNoteByIdUseCase useCase = new FindNoteByIdUseCase(persistence);
+  private final DeleteNoteUseCase useCase = new DeleteNoteUseCase(persistence);
 
   @Test
-  void returnsNoteWhenFound() {
+  void deletesExistingNote() {
     var saved = persistence.save(new Note(null, "Title", "Body", Instant.now(), null));
 
-    var result = useCase.execute(saved.id());
+    useCase.execute(saved.id());
 
-    assertThat(result.title()).isEqualTo("Title");
+    assertThat(persistence.findById(saved.id())).isEmpty();
   }
 
   @Test
-  void throwsWhenNotFound() {
+  void throwsWhenNoteNotFound() {
     assertThatThrownBy(() -> useCase.execute(999L))
         .isInstanceOf(NoteNotFoundException.class)
         .hasMessageContaining("999");

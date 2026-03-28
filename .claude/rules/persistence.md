@@ -68,8 +68,59 @@ catch (DuplicateKeyException e) { throw new OrderAlreadyExistsException(order.id
 
 `repository.save()` on an aggregate with child collections does DELETE ALL + INSERT ALL for children on every save. This is by design — the aggregate is the consistency boundary. If this causes performance problems, the aggregate is too large — split it.
 
+## Concurrency
+
+### Mutation return types — avoid check-then-act
+
+Port methods that mutate a single entity must return enough information for the caller to know whether the operation took effect. This prevents TOCTOU race conditions where a separate existence check becomes stale before the mutation executes.
+
+| Operation | Return type | Meaning |
+|-----------|-------------|---------|
+| Delete one entity | `boolean` | `true` if a row was deleted |
+| Conditional update (by ID) | `boolean` or `Optional<T>` | Whether a row was matched and updated |
+| Batch delete/update | `int` | Number of affected rows |
+
+Bad — separate check creates a race window:
+
+    if (!persistence.existsById(id)) throw new NotFoundException(id);
+    persistence.deleteById(id); // entity may already be gone
+
+Good — single atomic operation, caller inspects result:
+
+    if (!persistence.deleteById(id)) throw new NotFoundException(id);
+
+At the adapter layer, use `@Modifying @Query` returning `int`, then convert to `boolean`:
+
+    @Modifying @Query("DELETE FROM notes WHERE id = :id")
+    int deleteAndReturnCount(long id);
+
+Updates that need the prior state (e.g., merging fields) correctly use `findById` + `save` within a `@Transactional` boundary — the transaction provides atomicity. This rule targets fire-and-forget mutations where only success/failure matters.
+
+### Optimistic locking — prevent lost updates
+
+When concurrent modifications to the same entity must not silently overwrite each other, add `@Version`:
+
+    @Table("orders")
+    public record OrderEntity(@Id Long id, @Version Integer version, ...) { }
+
+How it works: Spring Data JDBC adds `WHERE version = :v` to UPDATE and DELETE statements. If another transaction changed the row, the version won't match, and Spring throws `OptimisticLockingFailureException`.
+
+| Scenario | Use optimistic locking? |
+|----------|------------------------|
+| Last-writer-wins is acceptable (simple PUT replace) | No — adds complexity for no benefit |
+| Concurrent edits must not silently overwrite each other | Yes |
+| Entity has a version/updated_at column already | Consider it — low cost to add |
+| High-contention entities (inventory, balances) | Yes, or pessimistic locking for extreme cases |
+
+Schema: add `version INTEGER NOT NULL DEFAULT 0` via Flyway migration.
+
+Domain impact: the `version` field appears on the persistence entity only. Do not leak it into domain records unless the domain genuinely needs conflict detection (e.g., exposing `ETag` headers). Map it away in `toDomain()`.
+
+Catch `OptimisticLockingFailureException` in the adapter or facade and translate to a domain exception (e.g., `StaleEntityException`) when the caller needs to distinguish conflicts from other errors.
+
 ## What NOT to do
 
 - No mapping in domain or application code. Domain does not know about entities or DTOs.
 - No passing DTOs through use cases. Convert to domain types at the boundary.
 - No shared mapper modules across adapters. Each adapter owns its mapping.
+- No `void` return on port methods that delete or conditionally update. Return `boolean` or a count so callers detect no-ops without a separate existence check.

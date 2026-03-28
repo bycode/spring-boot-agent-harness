@@ -11,6 +11,9 @@ class NotepadModuleConfiguration {
   NotepadAPI notepadAPI(NotePersistencePort persistence) {
     var createNote = new CreateNoteUseCase(persistence);
     var findNote = new FindNoteByIdUseCase(persistence);
-    return new NotepadFacade(createNote, findNote);
+    var listNotes = new ListNotesUseCase(persistence);
+    var updateNote = new UpdateNoteUseCase(persistence);
+    var deleteNote = new DeleteNoteUseCase(persistence);
+    return new NotepadFacade(createNote, findNote, listNotes, updateNote, deleteNote);
   }
 }

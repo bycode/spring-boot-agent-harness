@@ -12,7 +12,7 @@ class CreateNoteUseCase {
   }
 
   Note execute(Note note) {
-    var noteToSave = new Note(null, note.title(), note.body(), Instant.now());
+    var noteToSave = new Note(null, note.title(), note.body(), Instant.now(), null);
     return persistence.save(noteToSave);
   }
 }

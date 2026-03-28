@@ -12,7 +12,7 @@ class CreateNoteUseCaseTest {
 
   @Test
   void setsCreatedAtAndDelegatesToPort() {
-    var input = new Note(null, "Title", "Body", null);
+    var input = new Note(null, "Title", "Body", null, null);
 
     var result = useCase.execute(input);
 
@@ -20,11 +20,12 @@ class CreateNoteUseCaseTest {
     assertThat(result.title()).isEqualTo("Title");
     assertThat(result.body()).isEqualTo("Body");
     assertThat(result.createdAt()).isNotNull();
+    assertThat(result.updatedAt()).isNull();
   }
 
   @Test
   void assignsNullIdBeforeSaving() {
-    var input = new Note(99L, "Title", "Body", null);
+    var input = new Note(99L, "Title", "Body", null, null);
 
     var result = useCase.execute(input);
 

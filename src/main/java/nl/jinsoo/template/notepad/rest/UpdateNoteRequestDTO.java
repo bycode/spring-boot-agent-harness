@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import nl.jinsoo.template.notepad.Note;
 
-@Schema(description = "Request to create a note")
-record CreateNoteRequestDTO(
-    @NotBlank @Size(max = 200) @Schema(description = "Note title", example = "My first note")
+@Schema(description = "Request to update a note")
+record UpdateNoteRequestDTO(
+    @NotBlank @Size(max = 200) @Schema(description = "Note title", example = "Updated title")
         String title,
-    @NotBlank @Size(max = 10_000) @Schema(description = "Note body", example = "Hello, world!")
+    @NotBlank @Size(max = 10_000) @Schema(description = "Note body", example = "Updated body")
         String body) {
 
   Note toDomain() {

@@ -75,6 +75,13 @@ class SecurityConfigTest {
   void jwtDecoderBeanCanBeCreatedFromSecretKey() {
     var config = new SecurityConfig("demo-signing-key-must-be-at-least-256-bits", "");
 
-    assertNotNull(config.jwtDecoder("demo-signing-key-must-be-at-least-256-bits"));
+    assertNotNull(config.jwtDecoder("demo-signing-key-must-be-at-least-256-bits", ""));
+  }
+
+  @Test
+  void jwtDecoderBeanCanBeCreatedWithAudience() {
+    var config = new SecurityConfig("demo-signing-key-must-be-at-least-256-bits", "");
+
+    assertNotNull(config.jwtDecoder("demo-signing-key-must-be-at-least-256-bits", "template-api"));
   }
 }

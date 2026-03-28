@@ -19,15 +19,16 @@ standard
 |------|------|
 | `NotepadAPI` | Module API interface |
 | `Note` | Domain record |
+| `Page` | Generic pagination container |
 | `NoteNotFoundException` | Domain exception |
 
 ## Hidden packages (implementation details)
 
 | Package | Contains |
 |---------|----------|
-| `internal/` | `NotepadFacade`, `CreateNoteUseCase`, `FindNoteByIdUseCase`, `NotePersistencePort`, `NotepadModuleConfiguration` |
+| `internal/` | `NotepadFacade`, `CreateNoteUseCase`, `FindNoteByIdUseCase`, `ListNotesUseCase`, `UpdateNoteUseCase`, `DeleteNoteUseCase`, `NotePersistencePort`, `NotepadModuleConfiguration` |
 | `persistence/` | `NoteEntity`, `NoteRepository`, `NoteRepositoryAdapter` |
-| `rest/` | `NoteController`, `CreateNoteRequestDTO`, `NoteResponseDTO`, `NoteExceptionHandler` |
+| `rest/` | `NoteController`, `CreateNoteRequestDTO`, `UpdateNoteRequestDTO`, `NoteResponseDTO`, `NotePageResponseDTO`, `NoteExceptionHandler` |
 
 ## Allowed dependencies
 None
@@ -37,8 +38,8 @@ None
 - **Events**: None published or consumed.
 
 ## Owned resources
-- **Database table(s):** `notes` (`V2__create_notes_table.sql`)
-- **REST endpoints:** `POST /api/notes`, `GET /api/notes/{id}`
+- **Database table(s):** `notes` (`V2__create_notes_table.sql`, `V3__add_updated_at_to_notes.sql`)
+- **REST endpoints:** `GET /api/notes`, `POST /api/notes`, `GET /api/notes/{id}`, `PUT /api/notes/{id}`, `DELETE /api/notes/{id}`
 - **Events published:** None
 - **Events consumed:** None
 
@@ -46,18 +47,25 @@ None
 
 | Endpoint | Method | Request body | Success response | Error responses |
 |----------|--------|-------------|-----------------|-----------------|
+| `/api/notes` | GET | N/A (query: `page`, `size`) | 200 + `NotePageResponseDTO` | — |
 | `/api/notes` | POST | `CreateNoteRequestDTO` (title, body) | 201 + `NoteResponseDTO` | 400 validation |
 | `/api/notes/{id}` | GET | N/A | 200 + `NoteResponseDTO` | 404 not found |
+| `/api/notes/{id}` | PUT | `UpdateNoteRequestDTO` (title, body) | 200 + `NoteResponseDTO` | 400 validation, 404 not found |
+| `/api/notes/{id}` | DELETE | N/A | 204 No Content | 404 not found |
 
 ### Behavioral notes
 - Create is not idempotent — each call creates a new note.
 - `createdAt` is server-assigned; client cannot set it.
+- List returns newest-first (by `createdAt` DESC). Default page size is 20, 0-based page index.
+- Update is a full replace (PUT semantics) — both title and body are required.
+- Update sets `updatedAt` to current server time; `createdAt` is immutable.
+- Delete is not idempotent — returns 404 if the note does not exist.
 - 404 returns RFC 9457 ProblemDetail with `title: "Note Not Found"`.
 
 ## Validation commands
 ```bash
 # Fast: unit tests only (no Docker needed)
-./mvnw -q test -Dtest="NoteTest,CreateNoteUseCaseTest,FindNoteByIdUseCaseTest,NoteExceptionHandlerTest"
+./mvnw -q test -Dtest="NoteTest,CreateNoteUseCaseTest,FindNoteByIdUseCaseTest,ListNotesUseCaseTest,UpdateNoteUseCaseTest,DeleteNoteUseCaseTest,NoteExceptionHandlerTest"
 
 # Slice tests (Docker required)
 ./mvnw -q test -Dtest="NoteRepositoryAdapterTest,NoteControllerSliceTest"

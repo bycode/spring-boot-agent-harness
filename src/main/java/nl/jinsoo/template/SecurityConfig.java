@@ -12,7 +12,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -92,8 +95,16 @@ public class SecurityConfig {
 
   @Bean
   @ConditionalOnProperty("jwt.secret-key")
-  JwtDecoder jwtDecoder(@Value("${jwt.secret-key}") String secretKey) {
+  JwtDecoder jwtDecoder(
+      @Value("${jwt.secret-key}") String secretKey, @Value("${jwt.audience:}") String audience) {
     var key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-    return NimbusJwtDecoder.withSecretKey(key).build();
+    var decoder = NimbusJwtDecoder.withSecretKey(key).build();
+    if (!audience.isBlank()) {
+      var audienceValidator =
+          new JwtClaimValidator<List<String>>("aud", aud -> aud != null && aud.contains(audience));
+      decoder.setJwtValidator(
+          new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), audienceValidator));
+    }
+    return decoder;
   }
 }

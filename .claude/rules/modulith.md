@@ -81,3 +81,4 @@ Spring Modulith hides all subpackages automatically. Only root package types are
 - Don't use events for request/response — call the API directly for queries
 - Events belong to the publisher, not a shared package
 - Never use `@ApplicationModule(type = Type.OPEN)` in new modules
+- Don't check-then-act in use cases (`existsById` followed by `deleteById`). Design port methods to return operation results and branch on the return value. See `persistence.md` § "Concurrency"

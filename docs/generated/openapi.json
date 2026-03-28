@@ -7,7 +7,8 @@
           "body": {
             "description": "Note body",
             "example": "Hello, world!",
-            "minLength": 1,
+            "maxLength": 10000,
+            "minLength": 0,
             "type": "string"
           },
           "title": {
@@ -22,6 +23,39 @@
           "body",
           "title"
         ],
+        "type": "object"
+      },
+      "NotePageResponseDTO": {
+        "description": "Paginated list of notes",
+        "properties": {
+          "content": {
+            "description": "List of notes",
+            "items": {
+              "$ref": "#/components/schemas/NoteResponseDTO"
+            },
+            "type": "array"
+          },
+          "page": {
+            "description": "Current page number (0-based)",
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "description": "Page size",
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "description": "Total number of notes",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "description": "Total number of pages",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
         "type": "object"
       },
       "NoteResponseDTO": {
@@ -44,8 +78,37 @@
           "title": {
             "description": "Note title",
             "type": "string"
+          },
+          "updatedAt": {
+            "description": "Last update timestamp",
+            "format": "date-time",
+            "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateNoteRequestDTO": {
+        "description": "Request to update a note",
+        "properties": {
+          "body": {
+            "description": "Note body",
+            "example": "Updated body",
+            "maxLength": 10000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "title": {
+            "description": "Note title",
+            "example": "Updated title",
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "title"
+        ],
         "type": "object"
       }
     }
@@ -57,6 +120,50 @@
   "openapi": "3.1.0",
   "paths": {
     "/api/notes": {
+      "get": {
+        "operationId": "list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotePageResponseDTO"
+                }
+              }
+            },
+            "description": "Page of notes"
+          }
+        },
+        "summary": "List notes with pagination",
+        "tags": [
+          "Notepad"
+        ]
+      },
       "post": {
         "operationId": "create",
         "requestBody": {
@@ -88,6 +195,32 @@
       }
     },
     "/api/notes/{id}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Note deleted"
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        },
+        "summary": "Delete a note",
+        "tags": [
+          "Notepad"
+        ]
+      },
       "get": {
         "operationId": "findById",
         "parameters": [
@@ -124,6 +257,56 @@
           }
         },
         "summary": "Find a note by ID",
+        "tags": [
+          "Notepad"
+        ]
+      },
+      "put": {
+        "operationId": "update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNoteRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponseDTO"
+                }
+              }
+            },
+            "description": "Note updated"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponseDTO"
+                }
+              }
+            },
+            "description": "Note not found"
+          }
+        },
+        "summary": "Update a note",
         "tags": [
           "Notepad"
         ]

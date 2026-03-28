@@ -6,6 +6,7 @@ spring:
 
 jwt:
   secret-key: demo-signing-key-must-be-at-least-256-bits-for-hmac-sha256
+  audience: template-api
 
 cors:
   allowed-origins: http://localhost:5173,http://localhost:3000
