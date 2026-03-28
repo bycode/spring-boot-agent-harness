@@ -11,16 +11,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Before finishing: did you run the verification step you identified at the start of this task (the EXIT CONDITION from the dod skill)? If yes, confirm the result. If no, run it now. If no exit condition was ever set and this task touched production code, flag this to the user."
-          }
-        ]
-      }
     ]
   }
 }
