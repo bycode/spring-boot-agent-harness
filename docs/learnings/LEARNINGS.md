@@ -49,7 +49,7 @@ These are permanently relevant for the current stack (Java 25, Spring Boot 4, Sp
 - **JaCoCo Maven Plugin**: `prepare-agent` appends to an existing `target/jacoco.exec` by default. Set `append=false` to keep repeated `verify` runs deterministic after interrupted builds.
 - **springdoc-openapi**: v3.x for Spring Boot 4 (v2.x for Boot 3). v3.0.2 aligns with Boot 4.0.3.
 - **Flyway 11+**: Requires separate `flyway-database-postgresql` module.
-- **Testcontainers**: Requires 1.21.4+ for Docker Engine 29 (API version 1.44).
+- **Testcontainers**: Upgraded to 2.0.4. Artifact `postgresql` renamed to `testcontainers-postgresql`. Import path relocated to `org.testcontainers.postgresql.PostgreSQLContainer` (non-generic).
 
 ### JaCoCo `append=false` corrupts exec file on Java 25 (2026-03-16)
 
