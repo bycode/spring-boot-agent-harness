@@ -78,7 +78,7 @@ Use SOLID as design heuristics, not as a precedence rule.
 - Methods should read like verbs or verb phrases.
 - Constants use `UPPER_SNAKE_CASE` only for deeply immutable `static final` values.
 - Avoid abbreviations unless they are standard in this domain: `ID`, `URL`, `HTTP`, `JSON`, `JWT`, `UUID`, `SQL`, `API`.
-- Avoid one-letter names except for very small scopes such as loop indices, short lambdas, or conventional exception variables.
+- Avoid one-letter names except for loop indices (`i`, `j`, `k`) and conventional exception variables (`e`). Use descriptive parameter names in lambdas.
 
 Repo-specific naming:
 
