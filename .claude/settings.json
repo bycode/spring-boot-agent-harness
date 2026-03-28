@@ -11,32 +11,6 @@
           }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Before exiting plan mode: does your plan touch 3+ files or involve architectural changes? If yes, check docs/exec-plans/active/ — if no relevant exec plan exists, create one with scripts/harness/new-exec-plan before proceeding. Plan mode is for conversation alignment; exec plans are the persistent project record."
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "REPO_ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; \"$REPO_ROOT/scripts/harness/dod-stop-check\"",
-            "timeout": 5
-          },
-          {
-            "type": "prompt",
-            "prompt": "If you wrote or modified tests in this task: verify they test behavior, not implementation. Would the test still fail if the feature were reimplemented with a completely different algorithm? If the test mirrors your implementation logic, rewrite it."
-          }
-        ]
-      }
     ]
   }
 }

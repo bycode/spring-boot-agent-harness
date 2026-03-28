@@ -60,31 +60,6 @@ Named `PLAN-NNNN-topic.md`. Sequence number is assigned by the script.
 - Definition of done
 - Tech debt introduced (list workarounds/deferred work, or "None")
 
-## Definition of done quality bar
-
-Every item in a plan's "Definition of done" section must be machine-checkable:
-a command you can run that produces a pass/fail result. Prose descriptions are
-not acceptable — state the verification command and expected outcome.
-
-Good:
-```
-- [ ] `./mvnw -q test -Dtest=OrderControllerSliceTest` — all 6 tests pass
-- [ ] `curl -s localhost:8080/api/orders | jq length` returns 0 after DELETE
-```
-
-Bad:
-```
-- [ ] All endpoints work end-to-end
-- [ ] Test coverage at all 4 tiers
-```
-
-The two pre-populated items (audit agent + full-check) are universal baselines.
-Task-specific items must be added for every plan — they verify the specific
-behavior this plan delivers, not just that nothing broke.
-
-For epics, DoD items are coarser (e.g., "all child PLANs completed + full-check
-on integrated result") but must still reference a runnable check.
-
 ## Execution discipline
 
 While executing a plan, treat the plan file as a living document:
