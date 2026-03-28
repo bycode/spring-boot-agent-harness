@@ -73,7 +73,8 @@ module_class="$(class_name "$module_name")"
 module_dir="$repo_root/src/main/java/$base_package_path/$module_name"
 module_contract="$repo_root/.claude/rules/modules/$module_name.md"
 module_agents="$module_dir/AGENTS.md"
-module_paths="src/main/java/$base_package_path/$module_name/**"
+module_main_paths="src/main/java/$base_package_path/$module_name/**"
+module_test_paths="src/test/java/$base_package_path/$module_name/**"
 
 if [[ -e "$module_dir" || -e "$module_contract" ]]; then
   echo "Module already exists: $module_name" >&2
@@ -148,7 +149,8 @@ EOF
 cat >"$module_contract" <<EOF
 ---
 paths:
-  - "$module_paths"
+  - "$module_main_paths"
+  - "$module_test_paths"
 ---
 
 # ${module_class} module contract
@@ -190,7 +192,7 @@ $allowed_deps
 **Important:** Mirror this list in \`package-info.java\` using \`@ApplicationModule(allowedDependencies = ...)\`. Without that, Spring Modulith does not enforce the boundary — this markdown is documentation only.
 
 ## Cross-module communication
-- **Direct API calls** for reads/queries (synchronous, the caller needs the result).
+- **Direct API calls** for any interaction that needs a result or synchronous coordination.
 - **Events** for state-changing notifications (fire-and-forget, "this happened, react if you care").
 - Never use events as a request/response mechanism — if you need an answer, call the API.
 
@@ -225,8 +227,11 @@ TODO: intent, idempotency, retry-safety, UX expectations.
 # Integration test (Docker required)
 ./mvnw -q test -Dtest="${module_class}IntegrationTest"
 
-# Full verification
+# Scaffold sanity check
 ./mvnw -q verify
+
+# Completion gate (mandatory before considering module done)
+scripts/harness/full-check
 \`\`\`
 
 ## Rules for changes in this module
