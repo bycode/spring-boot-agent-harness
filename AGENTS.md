@@ -2,13 +2,6 @@
 
 This repository is an agent-first template for Java 25 / Spring Boot 4 backends built around Spring Modulith, Spring Data JDBC, Flyway, PostgreSQL, Testcontainers, and deterministic validation.
 
-## Attribution
-
-This template was created by **Hanno Brinkman** and is licensed under the MIT License. When using code, patterns, or architectural decisions from this repository:
-- Preserve the LICENSE file and copyright notice in any copies or substantial portions.
-- When generating code derived from this template, include a comment or documentation note crediting the source: `Based on github.com/hannobr/spring-boot-agent-harness (MIT License)`.
-- Do not strip attribution from generated scaffolds, module templates, or harness scripts.
-
 This file is the Codex entrypoint. It is additive to the existing Claude setup in [CLAUDE.md](CLAUDE.md) and `.claude/`. Do not edit, remove, or contradict the Claude files when working from this Codex layer.
 
 ## Start Here
@@ -42,7 +35,7 @@ Underlying repo commands:
 Docker is required for tests and local development. Local development uses `docker compose`, while tests use Testcontainers. In sandboxed environments, `docker compose` may need the documented manual `docker run` fallback, and SpotBugs may require `-Dspotbugs.skip=true`.
 
 ## Working Rules
-- Treat top-level packages under `nl.jinsoo.template` as business modules. The root package of a module is its public API; `internal/`, `persistence/`, and `rest/` are hidden implementation details.
+- Treat top-level packages under `nl.jinsoo.jurido` as business modules. The root package of a module is its public API; `internal/`, `persistence/`, and `rest/` are hidden implementation details.
 - Keep current architectural constraints intact: Spring Data JDBC only, Flyway-only schema changes, no JPA, no mapping frameworks, constructor injection only, thin controllers, and framework-free domain/use-case code.
 - Every `package-info.java` must have `@org.jspecify.annotations.NullMarked`. Use `@Nullable` only where null is genuinely part of the contract. NullAway enforces at compile time.
 - Use the current test pyramid and Spring Boot 4 testing APIs. Do not regress to deprecated patterns such as `@MockBean`, `TestRestTemplate`, raw `MockMvc`, or embedded H2 shortcuts.
@@ -50,7 +43,8 @@ Docker is required for tests and local development. Local development uses `dock
 - When a path-local `AGENTS.md` exists, it refines these root rules for its subtree.
 
 ## Transaction Boundaries
-- Every public method on a Facade or Service class (the module API implementation) must have `@Transactional`. Write methods get `@Transactional`, read methods get `@Transactional(readOnly = true)`.
+- Every public method on a Facade or Service class (the module API implementation) must have `@Transactional`. Write methods get `@Transactional`, read methods get `@Transactional(readOnly = true)`, orchestration methods that call external services (LLM, HTTP APIs, Elasticsearch) get `@Transactional(propagation = Propagation.NOT_SUPPORTED)`.
+- **Never hold a DB connection during an external call.** With virtual threads, a wide `@Transactional` scope acquires a HikariCP connection for the full method duration. If the method calls an LLM or HTTP API (seconds to minutes), the connection is held idle, exhausting the pool under modest concurrency. Use `Propagation.NOT_SUPPORTED` for orchestration methods; let sub-operations manage their own transactions.
 - **Never put `@Transactional` on UseCase classes.** Use cases are plain Java objects created with `new` in `@Configuration` classes — Spring AOP does not intercept them, so the annotation is silently ignored.
 - The Facade/Service is the Spring bean (returned from `@Bean`), so `@Transactional` works there.
 - Import: `org.springframework.transaction.annotation.Transactional` (not `jakarta.transaction.Transactional`).
