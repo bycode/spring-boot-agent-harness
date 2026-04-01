@@ -8,11 +8,13 @@ paths:
 
 ## Where @Transactional goes
 
-Every public method on a Facade or Service class (the module API implementation) must have `@Transactional`:
+Every public method on a Facade or Service class (the module API implementation) must have `@Transactional`. The propagation depends on whether the method needs a database connection:
 
-- **Write methods**: `@Transactional`
-- **Read methods**: `@Transactional(readOnly = true)`
-- **Orchestration methods** (call LLM, HTTP APIs, or other external services): `@Transactional(propagation = Propagation.NOT_SUPPORTED)`
+- **DB writes**: `@Transactional`
+- **DB reads only**: `@Transactional(readOnly = true)`
+- **No DB access** (pure computation, external service calls, orchestration): `@Transactional(propagation = Propagation.NOT_SUPPORTED)`
+
+The deciding question is: **does this method (or any delegate it calls) acquire a JDBC connection?** If yes, use `readOnly` or default propagation. If no — whether it's a pure in-memory calculation, an LLM call, an HTTP request, or orchestration that delegates DB work to other Spring beans — use `NOT_SUPPORTED` to avoid holding a pooled connection for nothing.
 
 Import: `org.springframework.transaction.annotation.Transactional` (not `jakarta.transaction.Transactional`).
 
@@ -41,10 +43,11 @@ public Dossier assembleDossier(UUID conversationId) {
 }
 ```
 
-**Decision criteria:**
-- Method only does DB reads/writes → `@Transactional` or `@Transactional(readOnly = true)`
-- Method calls any external service (LLM, HTTP, search engine, message broker) → `Propagation.NOT_SUPPORTED`
-- Mixed: if external calls are unavoidable inside a transaction, keep the transaction as narrow as possible and move external calls outside
+**Decision criteria — ask in this order:**
+1. Does the method (or its delegate) touch the database directly? → `@Transactional` (write) or `@Transactional(readOnly = true)` (read)
+2. Does the method call external services (LLM, HTTP, search engine, message broker)? → `Propagation.NOT_SUPPORTED`
+3. Is the method pure computation with no I/O at all? → `Propagation.NOT_SUPPORTED` (same as #2 — no connection needed)
+4. Mixed DB + external calls? Keep the transaction as narrow as possible and move external calls outside. The facade method itself gets `NOT_SUPPORTED`; the DB sub-operations manage their own transactions
 
 ## Why NOT on use cases
 
