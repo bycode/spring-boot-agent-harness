@@ -65,19 +65,19 @@ None
 ## Validation commands
 ```bash
 # Fast: unit tests only (no Docker needed)
-./mvnw -q test -Dtest="NoteTest,CreateNoteUseCaseTest,FindNoteByIdUseCaseTest,ListNotesUseCaseTest,UpdateNoteUseCaseTest,DeleteNoteUseCaseTest,NoteExceptionHandlerTest"
+scripts/harness/mvn -q test -Dtest="NoteTest,CreateNoteUseCaseTest,FindNoteByIdUseCaseTest,ListNotesUseCaseTest,UpdateNoteUseCaseTest,DeleteNoteUseCaseTest,NoteExceptionHandlerTest"
 
 # Slice tests (Docker required)
-./mvnw -q test -Dtest="NoteRepositoryAdapterTest,NoteControllerSliceTest"
+scripts/harness/mvn -q test -Dtest="NoteRepositoryAdapterTest,NoteControllerSliceTest"
 
 # Module test (Docker required)
-./mvnw -q test -Dtest="NotepadModuleTest"
+scripts/harness/mvn -q test -Dtest="NotepadModuleTest"
 
 # Integration test (Docker required)
-./mvnw -q verify -Dit.test="NotepadIT"
+scripts/harness/mvn -q verify -Dit.test="NotepadIT"
 
 # Full verification
-./mvnw -q verify
+scripts/harness/mvn -q verify
 ```
 
 ## Rules for changes in this module

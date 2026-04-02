@@ -84,7 +84,7 @@ A finished module contains:
 
 Use `scripts/harness/new-module <module-name> <flat|standard> [allowed-dependencies]` to scaffold. The script generates the directory structure, `package-info.java` files, initial API interface, domain record, module contract, and module-local `AGENTS.md`.
 
-After scaffolding, fill in the TODOs in the generated module contract and implement the module following the anatomy above. Run `./mvnw -q verify` as a post-scaffold sanity check. Use `scripts/harness/full-check` as the completion gate before considering the module done.
+After scaffolding, fill in the TODOs in the generated module contract and implement the module following the anatomy above. Run `scripts/harness/mvn -q verify` as a post-scaffold sanity check. Use `scripts/harness/full-check` as the completion gate before considering the module done.
 
 ## Module contracts
 

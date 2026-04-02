@@ -61,19 +61,19 @@ Event records also live in the root package — they are part of the public API.
 ## Validation commands
 ```bash
 # Fast: unit tests only (no Docker needed)
-./mvnw -q test -Dtest="{UnitTest1},{UnitTest2}"
+scripts/harness/mvn -q test -Dtest="{UnitTest1},{UnitTest2}"
 
 # Slice tests (Docker required)
-./mvnw -q test -Dtest="{SliceTest1},{SliceTest2}"
+scripts/harness/mvn -q test -Dtest="{SliceTest1},{SliceTest2}"
 
 # Module test (Docker required)
-./mvnw -q test -Dtest="{ModuleTest}"
+scripts/harness/mvn -q test -Dtest="{ModuleTest}"
 
 # Integration test (Docker required)
-./mvnw -q test -Dtest="{IntegrationTest}"
+scripts/harness/mvn -q test -Dtest="{IntegrationTest}"
 
 # Scaffold sanity check
-./mvnw -q verify
+scripts/harness/mvn -q verify
 
 # Completion gate (mandatory before considering module done)
 scripts/harness/full-check
