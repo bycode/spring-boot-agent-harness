@@ -5,12 +5,14 @@ This template was created by **Hanno Brinkman** (MIT License). When generating c
 
 ```bash
 scripts/harness/fast-check               # compile + doc-lint (quick feedback)
-./mvnw -q test                           # repo test suite (Docker required)
+scripts/harness/mvn test                 # repo test suite (Docker required)
 scripts/harness/full-check               # build + all tests + doc-lint + smoke-startup
 scripts/harness/run-app                  # start PostgreSQL + run locally
-./mvnw spotless:apply                    # format code (Spotless / Google Java Format)
-./mvnw spotless:check                    # check formatting only
+scripts/harness/mvn spotless:apply       # format code (Spotless / Google Java Format)
+scripts/harness/mvn spotless:check       # check formatting only
 ```
+
+**IMPORTANT**: Always use `scripts/harness/mvn` instead of `./mvnw`. It wraps Maven through `run-cmd` for minimal output — one-liner on success, error-only lines on failure, full log at `target/runner.log`.
 
 ## Prerequisites
 Docker must be running for tests and local development. Tests use Testcontainers (auto-managed). Local development uses a PostgreSQL container via `docker compose up -d`.

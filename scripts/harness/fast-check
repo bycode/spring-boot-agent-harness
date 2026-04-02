@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+run_cmd="$repo_root/scripts/harness/run-cmd"
 
-"$repo_root/scripts/harness/doc-lint"
+"$run_cmd" --label "doc-lint" --error-pattern "^doc-lint:" -- "$repo_root/scripts/harness/doc-lint"
 
-cd "$repo_root"
-exec ./mvnw -q compile "$@"
+"$repo_root/scripts/harness/mvn" -q compile "$@"
