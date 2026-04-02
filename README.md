@@ -15,7 +15,9 @@ If you have questions, you can always approach me here: https://nl.linkedin.com/
 Clone it, run `init-template` to make it yours, and start building.
 
 ## The harness
-This one gives you infrastructure for agent-assisted development, while also making some very opinionated Spring Boot choices:
+This one gives you infrastructure for agent-assisted development, while also making some very opinionated Spring Boot choices.
+So far i like the mvn wrapper that i created with Claude Code: mvn verify or full-check can produce 50K-100K characters. Claude Code would truncate to 30K and destroy the diagnostic signal.
+The wrapper keeps it to 200-3000 characters of exactly the problem. It does however ignore warnings, that's the blind spot currently.
 
 - **`.claude/rules/`** path-based rules, automatically injected whenever relevant files are touched. Unlike subagents or skills, these don't need to be explicitly invoked.
 - **Module contracts** (`.claude/rules/modules/`) pin ownership, public API, dependencies, and validation commands per module. Agents know what's off-limits
