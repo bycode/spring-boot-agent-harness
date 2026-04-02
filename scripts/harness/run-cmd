@@ -33,7 +33,7 @@ fi
 
 [[ -z "$label" ]] && label="$(basename "$1")"
 
-tmp_log=$(mktemp "${TMPDIR:-/tmp}/runner.XXXXXX.log")
+tmp_log=$(mktemp "${TMPDIR:-/tmp}/runner-XXXXXX")
 trap 'rm -f "$tmp_log"' EXIT
 
 start_time=$(date +%s)
