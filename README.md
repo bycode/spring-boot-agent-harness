@@ -1,17 +1,17 @@
 # spring-boot-agent-harness
-A Java 25 / Spring Boot 4 starter for developers who want to experiment with Claude Code / Codex and who are interested in harness engineering (https://openai.com/index/harness-engineering/).
+A Java 25 / Spring Boot 4 starter for developers who want to experiment with Claude Code and who are interested in harness engineering (https://openai.com/index/harness-engineering/).
 
 If you have questions, you can always approach me here: https://nl.linkedin.com/in/hanno-brinkman-9847a636
 
 Clone it, run `init-template` to make it yours, and start building.
 
 ## The "harness"
-It gives you infrastructure for Claude Code / Codex, while also making some very opinionated Spring Boot choices.
+It gives you infrastructure for Claude Code, while also making some very opinionated Spring Boot choices.
 
 ### Maven wrapper (`scripts/harness/mvn`)
 
-Wraps all Maven invocations for minimal, high-signal output. On success it prints a one-liner; on failure it extracts `[ERROR]` lines from the console **and** reads structured build artifacts (`target/surefire-reports`, `target/failsafe-reports`) to surface assertion messages that
-Maven's `-q` mode never prints to the console. Full unfiltered output from the last run is available at `target/runner.log`.
+Wraps all Maven invocations for minimal, high-signal output. On success it prints a one-liner; on failure it extracts `[ERROR]` lines from the console **and** reads structured build artifacts (`target/surefire-reports`, `target/failsafe-reports`) to surface assertion messages and exception
+details, giving Claude Code the exact failure reason without reading the full log.
 
 ### Infrastructure
 
