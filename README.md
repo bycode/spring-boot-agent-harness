@@ -14,7 +14,7 @@ If you have questions, you can always approach me here: https://nl.linkedin.com/
 
 Clone it, run `init-template` to make it yours, and start building.
 
-## The scaffolding
+## The "harness"
 It gives you infrastructure for agent-assisted development, while also making some very opinionated Spring Boot choices.
 
 ### Maven wrapper (`scripts/harness/mvn`)
