@@ -13,4 +13,4 @@ FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 BASENAME=$(basename "$FILE" .java)
 [[ "$BASENAME" == "package-info" ]] && exit 0
 
-printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"TEST REMINDER: You wrote %s. Decide what test this needs (unit, slice, or integration) per .claude/rules/testing.md"}}\n' "$BASENAME"
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"TEST REMINDER: You wrote %s. Decide what test this needs (unit, slice, or integration) per .claude/rules/testing.md, if a test is needed do NOT delay writing it, do it right now"}}\n' "$BASENAME"
