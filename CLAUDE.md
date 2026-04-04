@@ -48,6 +48,8 @@ Top-level packages under `nl.jinsoo.template` are business modules (Spring Modul
 ## Testing
 Every code change must have passing tests. See `.claude/rules/testing.md` for the full test pyramid.
 
+**Tests ship with the code, not after it.** Write tests in the same plan step or plan as the production code they cover. Never defer tests to a separate plan. See `.claude/rules/exec-plans.md` § "Tests live with the code" for the full rule.
+
 `scripts/harness/full-check` is the MANDATORY final step of every plan. No plan is complete until full-check passes.
 OpenAPI drift is part of that contract: keep `docs/generated/openapi.json` committed and refresh it with `scripts/harness/generate-openapi` whenever endpoint behavior changes.
 

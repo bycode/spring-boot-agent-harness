@@ -60,6 +60,25 @@ Named `PLAN-NNNN-topic.md`. Sequence number is assigned by the script.
 - Definition of done
 - Tech debt introduced (list workarounds/deferred work, or "None")
 
+## Tests live with the code
+
+Tests are not a separate phase — they ship in the same plan as the production code they cover.
+
+### Rules
+
+1. **Same plan, not later.** Every plan step that introduces or modifies production code must include the tests for that code. Never create a dedicated "write tests" plan.
+2. **Pass before proceeding.** Tests for a step must pass before marking the step `- [x]` and moving to the next step.
+3. **Existing code without tests.** If you edit production code that lacks tests, add tests in the same plan.
+4. **Test tier placement in multi-plan epics:**
+
+   | Test tier | Where it lives |
+   |-----------|---------------|
+   | Unit / slice / module tests | Same plan as the production code |
+   | Integration tests for endpoints introduced in the plan | Same plan — update existing `*IT` if one exists |
+   | Cross-module integration tests (depend on work from multiple plans) | Explicit plan in the epic, listed upfront — scoped only to cross-cutting ITs |
+
+5. **Epic planning.** When an epic requires cross-module integration tests, include that plan in the epic's execution plan list from the start — not as an afterthought.
+
 ## Execution discipline
 
 While executing a plan, treat the plan file as a living document:

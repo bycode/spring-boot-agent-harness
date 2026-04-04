@@ -66,6 +66,7 @@ status: active
 |---|---|---|
 
 ## Execution plans
+<!-- If cross-module integration tests are needed, include a dedicated IT plan here upfront — not as an afterthought. -->
 
 | Plan | Topic | Dependencies | Parallelism |
 |---|---|---|---|
@@ -109,6 +110,7 @@ $epic_line
 - TODO
 
 ## Steps
+<!-- Tests ship with the code: each step that adds/modifies production code must include its tests. See exec-plans.md § "Tests live with the code". -->
 - [ ] TODO
 
 ## Contract updates (if this plan changes a module's REST boundary)
@@ -121,6 +123,7 @@ $epic_line
 |---|---|
 
 ## Definition of done
+- [ ] Every step that touched production code includes its tests (no deferred test plans)
 - [ ] Audit agent passes (spawn \`audit\` agent to verify rule compliance)
 - [ ] \`scripts/harness/full-check\` passes
 - [ ] TODO: task-specific exit conditions (must be machine-verifiable — state command + expected outcome)
