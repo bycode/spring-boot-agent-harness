@@ -71,6 +71,18 @@ class ArchitectureRulesTest {
   }
 
   @Test
+  void useCasesMustNotHaveTransactionalMethods() {
+    noMethods()
+        .that()
+        .areDeclaredInClassesThat()
+        .haveSimpleNameEndingWith("UseCase")
+        .should()
+        .beAnnotatedWith(Transactional.class)
+        .allowEmptyShould(true)
+        .check(classes);
+  }
+
+  @Test
   void moduleApiImplementationsMustHaveTransactionalMethods() {
     methods()
         .that()

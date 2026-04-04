@@ -43,11 +43,25 @@ public Dossier assembleDossier(UUID conversationId) {
 }
 ```
 
-**Decision criteria — ask in this order:**
-1. Does the method (or its delegate) touch the database directly? → `@Transactional` (write) or `@Transactional(readOnly = true)` (read)
-2. Does the method call external services (LLM, HTTP, search engine, message broker)? → `Propagation.NOT_SUPPORTED`
-3. Is the method pure computation with no I/O at all? → `Propagation.NOT_SUPPORTED` (same as #2 — no connection needed)
-4. Mixed DB + external calls? Keep the transaction as narrow as possible and move external calls outside. The facade method itself gets `NOT_SUPPORTED`; the DB sub-operations manage their own transactions
+**Decision criteria — check in this order:**
+1. **Mixed DB + external calls?** → `Propagation.NOT_SUPPORTED` on the facade. Move external calls outside transactional boundaries. DB sub-operations manage their own transactions (via Spring Data JDBC defaults or explicit `@Transactional` on adapter methods). When multiple DB operations must be atomic, group them in a single `@Transactional` sub-method — do not rely on separate sub-operations for work that must commit or rollback together.
+2. **External calls only, or pure computation with no I/O?** → `Propagation.NOT_SUPPORTED` (no connection needed)
+3. **DB reads only?** → `@Transactional(readOnly = true)`
+4. **DB writes?** → `@Transactional`
+
+## Event listeners (`@ApplicationModuleListener`)
+
+`@ApplicationModuleListener` is a composed annotation: `@Async` + `@TransactionalEventListener` + `@Transactional(propagation = REQUIRES_NEW)`. This means:
+
+- **Handlers always start a fresh transaction** on a separate virtual thread, not the publisher's thread or transaction.
+- The facade-level `@Transactional` rules still apply to whatever the handler delegates to. If the handler calls an external service, the same connection-holding risk applies — use `NOT_SUPPORTED` on the orchestrating method.
+- **Pool pressure under fan-out**: each async handler acquires its own connection. High event throughput with many listeners can exhaust the pool. Consider `@ConcurrencyLimit` (see below) on event handler beans if fan-out is high.
+
+## Connection pool admission control
+
+`Propagation.NOT_SUPPORTED` reduces how long connections are held (scope reduction). `@ConcurrencyLimit` (Spring Framework 7, `org.springframework.resilience.annotation`) caps how many concurrent method invocations can run (admission control). Together they address connection pool exhaustion under virtual threads.
+
+Use `@ConcurrencyLimit` on facade or event handler methods that hit the database to ensure concurrent connection demand stays below pool size. Requires `@EnableResilientMethods` on a `@Configuration` class.
 
 ## Why NOT on use cases
 
@@ -64,6 +78,8 @@ return new OrderFacade(createUseCase, findUseCase);  // ← Spring bean
 The Facade/Service is returned from a `@Bean` method, so Spring wraps it in a proxy and `@Transactional` works.
 
 This is a design tradeoff. An equally valid approach is making use cases Spring beans (`@Component`) and putting `@Transactional` directly on them. This template chose framework-free use cases, so the Facade carries the transaction boundary.
+
+The `useCasesMustNotHaveTransactionalMethods` ArchUnit rule in `ArchitectureRulesTest` enforces that no `*UseCase` class has `@Transactional` methods. The build fails if someone adds the annotation where it would be silently ignored.
 
 ## Transaction propagation
 
