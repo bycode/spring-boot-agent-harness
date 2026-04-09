@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# UserPromptSubmit hook: inject regression-first reminder before agent plans.
+# Non-blocking — context injection only.
+
+set -euo pipefail
+
+printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"REGRESSION-FIRST: If this task is a bug fix, public API behavior change, or risky refactor — write one failing regression/acceptance test at the smallest useful layer BEFORE modifying production code. See testing.md § Regression-first rule."}}\n'

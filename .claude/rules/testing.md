@@ -5,6 +5,22 @@ paths:
 
 # Testing rules
 
+## Regression-first rule
+
+For **bug fixes**, **public API behavior changes**, and **risky refactors**: write one failing
+regression or acceptance test at the smallest useful layer *before* changing production code.
+
+- **Bug fix**: the test reproduces the bug. It fails before the fix, passes after.
+- **API behavior change**: the test asserts the new expected behavior. It fails against the current code.
+- **Risky refactor**: a characterization test pins existing behavior. It passes before and after.
+
+"Smallest useful layer" means: unit test if the behavior is pure logic, slice test if it needs
+a database or HTTP layer, integration test only if the bug spans layers.
+
+This does not apply to: new features (greenfield code has nothing to regress against),
+configuration changes, documentation, or trivial changes where the existing test suite
+already covers the behavior.
+
 ## Summary
 
 - Target platform only: Java 25, Spring Boot 4.x, Spring Framework 7.x, Spring AI 2.x, JUnit 6.x, Testcontainers 2.x. Do not preserve Spring Boot 3.x, Spring AI 1.x, JUnit 5.x, or Testcontainers 1.x compatibility in test code, examples, or guidance.
