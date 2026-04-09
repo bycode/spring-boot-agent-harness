@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "description": "Spring Boot parent — own PR, automerge",
+      "matchPackageNames": ["org.springframework.boot:spring-boot-starter-parent"],
+      "groupName": "Spring Boot",
+      "automerge": true
+    },
+    {
+      "description": "Spring Modulith — own PR, automerge",
+      "matchPackageNames": ["org.springframework.modulith:spring-modulith-bom"],
+      "groupName": "Spring Modulith",
+      "automerge": true
+    },
+    {
+      "description": "All other dependencies — grouped, automerge",
+      "matchManagers": ["maven"],
+      "matchDepTypes": ["dependencies", "dependency_management"],
+      "excludePackageNames": [
+        "org.springframework.boot:spring-boot-starter-parent",
+        "org.springframework.modulith:spring-modulith-bom"
+      ],
+      "groupName": "non-BOM dependencies",
+      "automerge": true
+    },
+    {
+      "description": "All plugins — grouped, automerge",
+      "matchManagers": ["maven"],
+      "matchDepTypes": ["plugin", "build"],
+      "groupName": "Maven plugins",
+      "automerge": true
+    }
+  ]
+}
