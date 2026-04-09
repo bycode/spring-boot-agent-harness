@@ -14,21 +14,11 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "scripts/harness/check-test-exists",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "scripts/harness/plan-progress-check",
+            "command": "scripts/harness/post-tool-hook",
             "timeout": 5
           }
         ]

@@ -37,7 +37,7 @@ Top-level packages under `nl.jinsoo.template` are business modules (Spring Modul
 ## Plans
 **TRIGGER**: For multi-file or architectural changes, persist the approved plan to `docs/exec-plans/active/PLAN-NNNN-topic.md` BEFORE writing any code (Use `scripts/harness/new-exec-plan <epic|plan> <topic-slug> [EPIC-XXXX]` to create plan files — it handles sequence numbering and templating automatically.). When work spans multiple plans, persist an `EPIC-NNNN-topic.md` file FIRST, before creating any child plans. This applies whether the plan comes from plan mode, a user message, or your own proposal. Always include a decision log and tech debt section. See `.claude/rules/exec-plans.md` for format.
 
-**HARD LIMIT**: Max 8 steps per plan. If planning produces more, split the overflow into a follow-up plan. See `.claude/rules/exec-plans.md` § "Plan size limit".
+**HARD LIMIT**: Max 12 steps per plan. If planning produces more, split the overflow into a follow-up plan. See `.claude/rules/exec-plans.md` § "Plan size limit".
 
 **MANDATORY**: Always use `scripts/harness/new-exec-plan` to create plan/epic files. Never create them by hand. The script assigns the correct sequence number and generates the full template with every required section.
 

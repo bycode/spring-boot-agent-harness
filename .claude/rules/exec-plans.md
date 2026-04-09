@@ -47,10 +47,10 @@ The script auto-assigns the next sequence number and generates a template with e
 
 ## Plan size limit
 
-**Maximum 8 steps per plan.** If planning produces more than 8 steps, split the remaining steps into a follow-up plan. This prevents quality degradation during execution: agents lose coherence on long plans as context accumulates.
+**Maximum 12 steps per plan.** If planning produces more than 12 steps, split the remaining steps into a follow-up plan. This prevents quality degradation during execution: agents lose coherence on long plans as context accumulates.
 
-When planning produces >8 steps:
-1. Put the first ≤8 steps in the current plan.
+When planning produces >12 steps:
+1. Put the first ≤12 steps in the current plan.
 2. Create a follow-up plan for the remaining steps (`scripts/harness/new-exec-plan plan <topic-slug>`).
 3. Reference the follow-up in the current plan's approach section so the dependency is clear.
 

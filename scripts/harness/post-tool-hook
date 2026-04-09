@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Combined PostToolUse hook for Edit/Write/Bash.
+# Runs two checks and merges output into a single additionalContext.
+# Non-blocking (exit 0).
+
+set -euo pipefail
+
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+CONTEXT=""
+
+# --- Check 1: Test reminder (Edit/Write on production Java files) ---
+if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]]; then
+  if [[ "$FILE" == *src/main/java/*.java ]]; then
+    BASENAME=$(basename "$FILE" .java)
+    if [[ "$BASENAME" != "package-info" ]]; then
+      CONTEXT="TEST REMINDER: You wrote $BASENAME. Decide what test this needs (unit, slice, or integration) per .claude/rules/testing.md, if a test is needed do NOT delay writing it, do it right now"
+    fi
+  fi
+fi
+
+# --- Check 2: Plan progress (Edit/Write always; Bash only on build commands) ---
+RUN_PLAN_CHECK=false
+if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]]; then
+  RUN_PLAN_CHECK=true
+elif [[ "$TOOL" == "Bash" ]] && echo "$CMD" | grep -qE 'mvnw|mvn|full-check|verify|spotless|smoke-startup|doc-lint|fast-check'; then
+  RUN_PLAN_CHECK=true
+fi
+
+if $RUN_PLAN_CHECK; then
+  REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  PLAN_MSG=""
+
+  for plan in "$REPO_ROOT"/docs/exec-plans/active/*.md; do
+    [ -e "$plan" ] || continue
+    NAME=$(basename "$plan")
+
+    # Extract only the ## Steps section to avoid counting DoD/contract checklists
+    STEPS_SECTION=$(awk '/^## Steps$/,/^## [^S]/' "$plan" 2>/dev/null | sed '$d')
+    OPEN=$(echo "$STEPS_SECTION" | grep -c '^\- \[ \]' 2>/dev/null || true)
+    IN_PROGRESS=$(echo "$STEPS_SECTION" | grep -c '^\- \[~\]' 2>/dev/null || true)
+    DONE=$(echo "$STEPS_SECTION" | grep -c '^\- \[x\]' 2>/dev/null || true)
+
+    # Warn: tests passed but step still marked in-progress (Bash only)
+    if [[ "$TOOL" == "Bash" ]] && [ "$IN_PROGRESS" -gt 0 ] && echo "$CMD" | grep -qE 'verify|full-check|test'; then
+      TOOL_EXIT=$(echo "$INPUT" | jq -r '.tool_result.exit_code // empty')
+      if [ "$TOOL_EXIT" = "0" ]; then
+        PLAN_MSG="$PLAN_MSG  Warning: $NAME: Tests passed with step still [~]. Mark it [x] and add execution notes before continuing.\n"
+      fi
+    fi
+
+    # Warn: work happening but no step marked in-progress
+    if [ "$IN_PROGRESS" -eq 0 ] && [ "$OPEN" -gt 0 ]; then
+      PLAN_MSG="$PLAN_MSG  VIOLATION: $NAME: No step marked [~] in-progress. Mark your current step [~] in the plan file NOW before writing more code.\n"
+    fi
+
+    # Warn: plan exceeds 8-step limit
+    TOTAL=$((OPEN + IN_PROGRESS + DONE))
+    if [ "$TOTAL" -gt 12 ]; then
+      PLAN_MSG="$PLAN_MSG  VIOLATION: $NAME: $TOTAL steps exceeds 12-step limit. Split into follow-up plan.\n"
+    fi
+
+    # Status line
+    if [ "$OPEN" -gt 0 ]; then
+      PLAN_MSG="$PLAN_MSG  PLAN: $NAME: $DONE done, $IN_PROGRESS active, $OPEN remaining\n"
+    elif [ "$DONE" -gt 0 ]; then
+      PLAN_MSG="$PLAN_MSG  PLAN: $NAME: All items checked. Move to docs/exec-plans/completed/\n"
+    fi
+  done
+
+  if [[ -n "$PLAN_MSG" ]]; then
+    CONTEXT="${CONTEXT:+$CONTEXT\n\n}EXEC PLAN CHECKPOINT:\n$PLAN_MSG"
+  fi
+fi
+
+if [[ -n "$CONTEXT" ]]; then
+  # Use jq to properly escape the context string into valid JSON
+  jq -nc --arg ctx "$CONTEXT" '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$ctx}}'
+fi
