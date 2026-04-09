@@ -216,19 +216,19 @@ TODO: intent, idempotency, retry-safety, UX expectations.
 ## Validation commands
 \`\`\`bash
 # Fast: unit tests only (no Docker needed)
-./mvnw -q test -Dtest="TODO"
+scripts/harness/mvn -q test -Dtest="TODO"
 
 # Slice tests (Docker required)
-./mvnw -q test -Dtest="TODO"
+scripts/harness/mvn -q test -Dtest="TODO"
 
 # Module test (Docker required)
-./mvnw -q test -Dtest="${module_class}ModuleTest"
+scripts/harness/mvn -q test -Dtest="${module_class}ModuleTest"
 
 # Integration test (Docker required)
-./mvnw -q test -Dtest="${module_class}IntegrationTest"
+scripts/harness/mvn -q verify -Dit.test="${module_class}IT"
 
 # Scaffold sanity check
-./mvnw -q verify
+scripts/harness/mvn -q verify
 
 # Completion gate (mandatory before considering module done)
 scripts/harness/full-check

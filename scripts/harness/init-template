@@ -178,23 +178,38 @@ fi
 
 # 7. Remove reference module (notepad)
 if $DRY_RUN; then
-    echo "REMOVE: reference notepad module (src, tests, migration, contract)"
+    echo "REMOVE: reference notepad module (src, tests, migrations, contract, agent memory, OpenAPI)"
 else
     rm -rf "src/main/java/$NEW_PACKAGE_PATH/notepad"
     rm -rf "src/test/java/$NEW_PACKAGE_PATH/notepad"
     rm -f  "src/main/resources/db/migration/V2__create_notes_table.sql"
+    rm -f  "src/main/resources/db/migration/V3__add_updated_at_to_notes.sql"
     rm -f  ".claude/rules/modules/notepad.md"
+    rm -rf ".claude/agent-memory/audit"
+    cat > docs/generated/openapi.json <<'SPEC'
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {}
+  }
+}
+SPEC
 fi
 
 echo ""
 if $DRY_RUN; then
     echo "Done (dry run). No files were modified."
 else
-    echo "Verifying result compiles..."
-    if ./mvnw -q compile; then
-        echo "Done! Template rewrite verified — compile succeeded."
+    echo "Verifying result (full-check — requires Docker)..."
+    if scripts/harness/full-check; then
+        echo "Done! Template rewrite verified — full-check passed."
     else
-        echo "ERROR: compile failed after rewrite. Check the output above." >&2
+        echo "ERROR: full-check failed after rewrite. Check target/runner.log." >&2
         exit 1
     fi
 fi
