@@ -26,7 +26,7 @@ jobs:
 
       - name: Run verify and smoke-startup
         run: |
-          ./mvnw -q verify
+          ./mvnw clean -q verify
           scripts/harness/smoke-startup
 
       - name: Verify OpenAPI spec is current
