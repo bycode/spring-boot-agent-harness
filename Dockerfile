@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM eclipse-temurin:25-jdk-alpine AS build
+FROM eclipse-temurin:25.0.2_10-jdk-alpine AS build
 WORKDIR /app
 
 COPY .mvn/ .mvn/
@@ -11,7 +11,7 @@ COPY src/ src/
 RUN ./mvnw package -q -DskipTests
 
 # Stage 2: Runtime
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25.0.2_10-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S app -G app
