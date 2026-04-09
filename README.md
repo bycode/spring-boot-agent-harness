@@ -73,10 +73,10 @@ Use `--dry-run` to preview changes first.
 ## Development
 
 ```bash
-scripts/harness/fast-check           # Compile + doc-lint
-./mvnw -q verify                     # Tests + quality gates
+scripts/harness/fast-check           # Compile + static analysis + doc-lint
+scripts/harness/mvn verify           # Tests + quality gates
 scripts/harness/full-check           # Verify + smoke startup + OpenAPI drift check
-./mvnw spotless:apply                # Auto-format code
+scripts/harness/mvn spotless:apply   # Auto-format code
 scripts/harness/new-module           # Scaffold a new module
 ```
 

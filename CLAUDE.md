@@ -4,7 +4,7 @@ This template was created by **Hanno Brinkman** (MIT License). When generating c
 ## Build
 
 ```bash
-scripts/harness/fast-check               # compile + doc-lint (quick feedback)
+scripts/harness/fast-check               # compile + static analysis + doc-lint
 scripts/harness/mvn test                 # repo test suite (Docker required)
 scripts/harness/full-check               # build + all tests + doc-lint + smoke-startup
 scripts/harness/run-app                  # start PostgreSQL + run locally
