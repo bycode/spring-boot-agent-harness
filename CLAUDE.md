@@ -37,6 +37,8 @@ Top-level packages under `nl.jinsoo.template` are business modules (Spring Modul
 ## Plans
 **TRIGGER**: For multi-file or architectural changes, persist the approved plan to `docs/exec-plans/active/PLAN-NNNN-topic.md` BEFORE writing any code (Use `scripts/harness/new-exec-plan <epic|plan> <topic-slug> [EPIC-XXXX]` to create plan files — it handles sequence numbering and templating automatically.). When work spans multiple plans, persist an `EPIC-NNNN-topic.md` file FIRST, before creating any child plans. This applies whether the plan comes from plan mode, a user message, or your own proposal. Always include a decision log and tech debt section. See `.claude/rules/exec-plans.md` for format.
 
+**HARD LIMIT**: Max 8 steps per plan. If planning produces more, split the overflow into a follow-up plan. See `.claude/rules/exec-plans.md` § "Plan size limit".
+
 **MANDATORY**: Always use `scripts/harness/new-exec-plan` to create plan/epic files. Never create them by hand. The script assigns the correct sequence number and generates the full template with every required section.
 
 **IMPORTANT**: When plan mode produces an approach that qualifies for an exec plan, persist it via `scripts/harness/new-exec-plan` before exiting plan mode. The exec-plan file is the durable output of the planning phase.
@@ -44,6 +46,9 @@ Top-level packages under `nl.jinsoo.template` are business modules (Spring Modul
 **TRIGGER**: When you make a trade-off, choose between alternatives, suppress a rule, or deviate from the plan — append an entry to the relevant plan's decision log immediately.
 
 **TRIGGER**: When all tasks in a plan are complete, move it from `docs/exec-plans/active/` to `docs/exec-plans/completed/`
+
+### Session blocks and sub-agent delegation
+For plans with >5 steps, structure steps into session blocks (3–5 steps each) with a `Context:` line per block. For plans with 3+ blocks, delegate each block to a sub-agent — the orchestrating agent reads the plan, spawns a sub-agent per block with scoped context, and writes execution notes between blocks. See `.claude/rules/exec-plans.md` § "Session blocks" and "Execution notes".
 
 ## Testing
 Every code change must have passing tests. See `.claude/rules/testing.md` for the full test pyramid.

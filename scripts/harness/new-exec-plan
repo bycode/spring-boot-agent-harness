@@ -111,6 +111,7 @@ $epic_line
 
 ## Steps
 <!-- Tests ship with the code: each step that adds/modifies production code must include its tests. See exec-plans.md § "Tests live with the code". -->
+<!-- For plans with >5 steps: use session blocks (### Block N — label / Context: ...). See exec-plans.md § "Session blocks". -->
 - [ ] TODO
 
 ## Contract updates (if this plan changes a module's REST boundary)
@@ -135,6 +136,9 @@ $epic_line
 
 ## Tech debt introduced
 - None yet.
+
+## Execution notes
+<!-- Append discoveries that affect future steps/blocks. See exec-plans.md § "Execution notes". -->
 EOF
     ;;
   *)
