@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); if ! echo \"$CMD\" | grep -qE 'mvnw|full-check|verify|spotless|smoke-startup|doc-lint|fast-check'; then exit 0; fi; REPO_ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"; MSG=''; for plan in \"$REPO_ROOT\"/docs/exec-plans/active/*.md; do [ -e \"$plan\" ] || continue; NAME=$(basename \"$plan\"); OPEN=$(grep -c '^- \\[ \\]' \"$plan\" 2>/dev/null); OPEN=${OPEN:-0}; DONE=$(grep -c '^- \\[x\\]' \"$plan\" 2>/dev/null); DONE=${DONE:-0}; if [ \"$OPEN\" -gt 0 ]; then MSG=\"$MSG  - $NAME ($DONE done, $OPEN remaining — review and mark completed items [x])\\n\"; elif [ \"$DONE\" -gt 0 ]; then MSG=\"$MSG  - $NAME (all items checked — move to docs/exec-plans/completed/)\\n\"; fi; done; if [ -n \"$MSG\" ]; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"EXEC PLAN CHECKPOINT: Active plans in docs/exec-plans/active/:\\n%s\"}}\\n' \"$MSG\"; fi",
+            "command": "scripts/harness/plan-progress-check",
             "timeout": 5
           }
         ]
