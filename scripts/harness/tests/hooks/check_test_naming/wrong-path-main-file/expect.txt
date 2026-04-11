@@ -1,0 +1,6 @@
+-Test class naming conventions
+-@SpringBootTest(RANDOM_PORT)
+-@DataJdbcTest
+-@WebMvcTest
+-@RestClientTest
+-@ApplicationModuleTest

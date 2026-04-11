@@ -1,0 +1,2 @@
++VIOLATION: @MockBean is deprecated for removal in Spring Boot 4 — replace with @MockitoBean
++Project-standard Spring Boot 4 / Framework 7 test APIs

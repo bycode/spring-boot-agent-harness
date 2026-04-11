@@ -1,0 +1,8 @@
+package nl.jinsoo.template.notepad;
+
+import java.util.concurrent.Executors;
+import javax.annotation.Nullable;
+
+public class NoteFixture {
+    private final java.util.concurrent.ExecutorService pool = Executors.newFixedThreadPool(10);
+}

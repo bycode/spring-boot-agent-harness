@@ -1,0 +1,3 @@
++VIOLATION: NoteMvcIT.java is an integration test that calls REST endpoints
++RestTestClient or MockMvcTester
++OpenApiContractValidator

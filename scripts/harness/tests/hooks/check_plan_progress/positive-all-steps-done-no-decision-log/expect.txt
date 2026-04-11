@@ -1,0 +1,3 @@
++EXEC PLAN CHECKPOINT:
++Warning: PLAN-0099-fake.md: plan is complete but decision log is empty
++Warning: PLAN-0099-fake.md: plan is complete but execution notes are empty

@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import org.junit.jupiter.api.Test;
+
+class NoteServiceTest {
+    @Test
+    void doesSomething() {
+    }
+}

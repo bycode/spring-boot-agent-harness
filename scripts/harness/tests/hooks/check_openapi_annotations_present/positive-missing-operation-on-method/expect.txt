@@ -1,0 +1,2 @@
++VIOLATION: WidgetController.java: findById() uses @GetMapping without a preceding @Operation annotation
++.claude/rules/rest.md

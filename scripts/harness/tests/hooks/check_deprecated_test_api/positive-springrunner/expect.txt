@@ -1,0 +1,2 @@
++VIOLATION: SpringRunner is JUnit 4 — Spring Framework 7 requires JUnit 6
++SpringExtension

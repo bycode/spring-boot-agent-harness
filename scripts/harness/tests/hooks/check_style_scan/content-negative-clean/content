@@ -1,0 +1,24 @@
+package nl.jinsoo.template.notepad.rest;
+
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/notes")
+public class NoteController {
+
+    @GetMapping
+    public List<String> list() {
+        return List.of("a", "b").stream().toList();
+    }
+
+    @PostMapping("/new")
+    public String create() {
+        return "ok";
+    }
+}

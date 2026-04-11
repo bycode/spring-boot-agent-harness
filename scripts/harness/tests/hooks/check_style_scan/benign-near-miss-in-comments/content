@@ -1,0 +1,25 @@
+package nl.jinsoo.template.notepad;
+
+/**
+ * Historical reference only — do not use any of the following patterns:
+ *   import javax.annotation.Nullable;
+ *   import org.jetbrains.annotations.NotNull;
+ *   import edu.umd.cs.findbugs.annotations.NonNull;
+ *   import reactor.core.publisher.Mono;
+ *   import org.mapstruct.Mapper;
+ *   import org.modelmapper.ModelMapper;
+ *   import org.slf4j.LoggerFactory;
+ *   Stream.of(...).collect(Collectors.toList())
+ *   Executors.newFixedThreadPool(10)
+ *   Executors.newCachedThreadPool()
+ *   CompletableFuture.supplyAsync(() -> ...)
+ *   ThreadLocal.withInitial(() -> ...)
+ *   @CrossOrigin(origins = "*")
+ *   @Validated on a @RestController
+ *   @GetMapping("/orders")
+ */
+// Above are prohibited — see .claude/rules/code-style.md, rest.md, virtual-threads.md
+public class NoteDoc2 {
+    // no violations here
+    private final String name = "safe";
+}

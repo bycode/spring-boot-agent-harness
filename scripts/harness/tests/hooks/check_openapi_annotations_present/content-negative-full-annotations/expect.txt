@@ -1,0 +1,5 @@
+-WidgetController.java: @RestController without @Tag
+-WidgetController.java: list() uses @GetMapping without a preceding @Operation
+-WidgetController.java: findById() uses @GetMapping without a preceding @Operation
+-WidgetController.java: create() uses @PostMapping without a preceding @Operation
+-WidgetController.java: delete() uses @DeleteMapping without a preceding @Operation

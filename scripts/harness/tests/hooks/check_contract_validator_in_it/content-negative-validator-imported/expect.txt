@@ -1,0 +1,1 @@
+-VIOLATION: NoteEndpointIT.java is an integration test

@@ -1,0 +1,2 @@
++Authorization: Bearer [REDACTED:bearer-auth]
+-abc123xyz

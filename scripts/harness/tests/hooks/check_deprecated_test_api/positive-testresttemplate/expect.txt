@@ -1,0 +1,2 @@
++VIOLATION: TestRestTemplate is not a project-standard Spring Boot 4 test API — use RestTestClient
++Project-standard Spring Boot 4 / Framework 7 test APIs

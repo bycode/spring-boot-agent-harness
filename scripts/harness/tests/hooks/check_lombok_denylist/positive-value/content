@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import lombok.Value;
+
+@Value
+public class NoteSnapshot {
+    String id;
+    String title;
+}

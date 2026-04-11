@@ -1,0 +1,4 @@
+package nl.jinsoo.template.notepad;
+
+public class NoteService {
+}

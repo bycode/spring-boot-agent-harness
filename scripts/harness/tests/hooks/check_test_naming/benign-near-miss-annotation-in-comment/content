@@ -1,0 +1,7 @@
+package nl.jinsoo.template.notepad;
+
+// This was once a @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+// test, but we refactored it down to a plain unit test. See also @WebMvcTest history.
+class NoteServiceTest {
+    // Intentionally empty; annotations only appear in comments above.
+}

@@ -1,0 +1,7 @@
+package nl.jinsoo.template.notepad;
+
+import org.testcontainers.containers.PostgreSQLContainer;
+
+class TestcontainersConfiguration {
+    PostgreSQLContainer<?> postgres;
+}

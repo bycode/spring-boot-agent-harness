@@ -1,0 +1,8 @@
+package nl.jinsoo.template.notepad;
+
+import lombok.Data;
+
+@Data
+public class NoteFixture {
+    private String title;
+}

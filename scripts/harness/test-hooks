@@ -1,0 +1,294 @@
+#!/usr/bin/env bash
+# scripts/harness/test-hooks
+# Fixture-based runner for scripts/harness/post-tool-hook.
+#
+# Walks scripts/harness/tests/hooks/ and executes every directory that
+# contains a case.json as a fixture. For each fixture the runner:
+#   1. Creates a temporary $REPO_ROOT and optionally seeds it with
+#      docs/exec-plans/active/*.md files from the fixture's plans/ dir
+#      and a single edited file from the fixture's content file.
+#      If the fixture provides a `harness.env` file, its HARNESS_ROOT_PACKAGE
+#      value is exported before the hook runs, letting the fixture prove
+#      that custom root packages are honored.
+#   2. Resolves {{TMPDIR}} in case.json to the temporary REPO_ROOT.
+#   3. Pipes the resulting JSON through post-tool-hook with REPO_ROOT set.
+#   4. Extracts hookSpecificOutput.additionalContext from the hook output.
+#   5. Checks expectations in expect.txt (+substring, -substring, or EMPTY).
+#
+# Exits 0 if every fixture passes, 1 otherwise.
+
+set -uo pipefail
+
+REPO_ROOT_REAL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+FIXTURES_DIR="$REPO_ROOT_REAL/scripts/harness/tests/hooks"
+HOOK="$REPO_ROOT_REAL/scripts/harness/post-tool-hook"
+SCRUBBER="$REPO_ROOT_REAL/scripts/harness/lib/scrub-secrets.sh"
+
+if [[ ! -d "$FIXTURES_DIR" ]]; then
+  echo "No fixtures directory at $FIXTURES_DIR" >&2
+  exit 1
+fi
+if [[ ! -x "$HOOK" ]]; then
+  echo "post-tool-hook is not executable at $HOOK" >&2
+  exit 1
+fi
+
+pass=0
+fail=0
+FAIL_NAMES=()
+
+# Shared expect.txt matcher. Reads "+"/"-"/"EMPTY" lines from the expect
+# file and compares against the observed output captured into `ctx`.
+# Populates two named arrays in the caller via nameref: $2 (failed flag)
+# and $3 (reasons array). Returns 0 always — the caller decides how to
+# report.
+match_expectations() {
+  local expect_file="$1"
+  local ctx="$2"
+  local -n _failed="$3"
+  local -n _reasons="$4"
+
+  if [[ ! -f "$expect_file" ]]; then
+    _failed=true
+    _reasons+=("missing expect.txt")
+    return 0
+  fi
+
+  local line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" ]] && continue
+    [[ "$line" == "#"* ]] && continue
+    case "$line" in
+      EMPTY)
+        if [[ -n "$ctx" ]]; then
+          _failed=true
+          _reasons+=("expected EMPTY output, got non-empty additionalContext")
+        fi
+        ;;
+      "+"*)
+        local expected="${line#+}"
+        if [[ "$ctx" != *"$expected"* ]]; then
+          _failed=true
+          _reasons+=("expected to contain: $expected")
+        fi
+        ;;
+      "-"*)
+        local unexpected="${line#-}"
+        if [[ "$ctx" == *"$unexpected"* ]]; then
+          _failed=true
+          _reasons+=("expected NOT to contain: $unexpected")
+        fi
+        ;;
+      *)
+        _failed=true
+        _reasons+=("unknown expect line: $line (use + / - / EMPTY)")
+        ;;
+    esac
+  done < "$expect_file"
+}
+
+# Report helper shared by both fixture runners.
+report_result() {
+  local name="$1"
+  local failed="$2"
+  local ctx="$3"
+  shift 3
+  local -a reasons=("$@")
+
+  if [[ "$failed" == "true" ]]; then
+    fail=$((fail + 1))
+    FAIL_NAMES+=("$name")
+    echo "FAIL: $name"
+    local r
+    for r in "${reasons[@]}"; do
+      echo "  - $r"
+    done
+    if [[ -n "$ctx" ]]; then
+      local preview
+      preview=$(printf '%s' "$ctx" | head -c 400)
+      echo "  got: $preview"
+    fi
+  else
+    pass=$((pass + 1))
+    echo "PASS: $name"
+  fi
+}
+
+run_fixture() {
+  local fixture_dir="$1"
+  local name="${fixture_dir#$FIXTURES_DIR/}"
+
+  local case_json_file="$fixture_dir/case.json"
+  [[ -f "$case_json_file" ]] || return 0
+
+  local tmp_root
+  tmp_root=$(mktemp -d)
+
+  # Seed fake active-plan files if the fixture provides any.
+  # Glob order is alphabetical, and we force monotonically increasing mtimes
+  # so `ls -t` inside check_plan_progress resolves deterministically to the
+  # alphabetically-last file as the "most recently edited" plan. Without the
+  # touch step, `cp` can land multiple files in the same filesystem tick,
+  # giving `ls -t` nondeterministic ordering within that tick.
+  if [[ -d "$fixture_dir/plans" ]]; then
+    mkdir -p "$tmp_root/docs/exec-plans/active"
+    local p epoch=1700000000
+    for p in "$fixture_dir/plans/"*.md; do
+      [ -e "$p" ] || continue
+      cp "$p" "$tmp_root/docs/exec-plans/active/"
+      touch -d "@${epoch}" "$tmp_root/docs/exec-plans/active/$(basename "$p")"
+      epoch=$((epoch + 1))
+    done
+  fi
+
+  # Resolve {{TMPDIR}} placeholders in case.json.
+  local case_json
+  case_json=$(sed "s|{{TMPDIR}}|$tmp_root|g" "$case_json_file")
+
+  local target=""
+  target=$(printf '%s' "$case_json" | jq -r '.tool_input.file_path // empty')
+
+  # If the fixture carries file content, place it at the resolved file_path.
+  if [[ -f "$fixture_dir/content" ]]; then
+    if [[ -n "$target" ]]; then
+      mkdir -p "$(dirname "$target")"
+      cp "$fixture_dir/content" "$target"
+    fi
+  fi
+
+  # If the fixture carries a `files/` tree, copy each file under it into
+  # $tmp_root at the same relative path. This lets a fixture seed multiple
+  # files at once (e.g., module source files + module contract markdown).
+  # Copies happen AFTER `content` so a single-file fixture that uses only
+  # `content` stays backwards-compatible.
+  if [[ -d "$fixture_dir/files" ]]; then
+    (
+      cd "$fixture_dir/files" && \
+        find . -type f -print0 | while IFS= read -r -d '' rel; do
+          rel="${rel#./}"
+          mkdir -p "$tmp_root/$(dirname "$rel")"
+          cp "$fixture_dir/files/$rel" "$tmp_root/$rel"
+        done
+    )
+  fi
+
+  # If the fixture carries a `harness.env` file, export HARNESS_ROOT_PACKAGE
+  # from it so the hook-checks library resolves paths under a custom root
+  # package. This lets fixtures prove that the de-hardcoded call sites
+  # actually honor the override. hook-checks.sh gives env vars precedence
+  # over the lib/harness.env file, so the export wins.
+  local fixture_root_pkg=""
+  if [[ -f "$fixture_dir/harness.env" ]]; then
+    fixture_root_pkg=$(awk -F= '
+      /^[[:space:]]*#/ { next }
+      /^[[:space:]]*HARNESS_ROOT_PACKAGE[[:space:]]*=/ {
+        sub(/^[[:space:]]*HARNESS_ROOT_PACKAGE[[:space:]]*=[[:space:]]*/, "", $0)
+        gsub(/^"|"$/, "", $0)
+        gsub(/^'\''|'\''$/, "", $0)
+        print
+        exit
+      }
+    ' "$fixture_dir/harness.env")
+  fi
+
+  # Run the hook with the temporary REPO_ROOT.
+  local output
+  if [[ -n "$fixture_root_pkg" ]]; then
+    output=$(printf '%s' "$case_json" | REPO_ROOT="$tmp_root" HARNESS_ROOT_PACKAGE="$fixture_root_pkg" "$HOOK" 2>/dev/null)
+  else
+    output=$(printf '%s' "$case_json" | REPO_ROOT="$tmp_root" "$HOOK" 2>/dev/null)
+  fi
+  local rc=$?
+
+  local ctx=""
+  if [[ -n "$output" ]]; then
+    ctx=$(printf '%s' "$output" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null || printf '%s' "$output")
+  fi
+
+  rm -rf "$tmp_root"
+
+  local failed=false
+  local -a reasons=()
+
+  if [[ $rc -ne 0 ]]; then
+    failed=true
+    reasons+=("hook exited with code $rc")
+  fi
+
+  match_expectations "$fixture_dir/expect.txt" "$ctx" failed reasons
+  report_result "$name" "$failed" "$ctx" "${reasons[@]}"
+}
+
+# Shell-script fixtures are self-contained: each carries a `test.sh` script
+# run in a fresh temp directory. Unlike the other runners, they do NOT use
+# expect.txt — the script performs its own setup, invocation, and
+# assertions, then exits 0 (pass) or non-zero (fail). REPO_ROOT_REAL is
+# exported so the script can source `scripts/harness/lib/hook-checks.sh`
+# or invoke installer scripts from the real repo. Used by fixtures that
+# need a real git repository (e.g., check_migration_edit_guard,
+# check_jacoco_config_guard, install-git-hooks).
+run_shell_fixture() {
+  local fixture_dir="$1"
+  local name="${fixture_dir#$FIXTURES_DIR/}"
+
+  local tmp_root
+  tmp_root=$(mktemp -d)
+
+  local output rc failed=false
+  local -a reasons=()
+
+  output=$(cd "$tmp_root" && REPO_ROOT_REAL="$REPO_ROOT_REAL" TMPDIR="$tmp_root" bash "$fixture_dir/test.sh" 2>&1)
+  rc=$?
+
+  rm -rf "$tmp_root"
+
+  if [[ $rc -ne 0 ]]; then
+    failed=true
+    reasons+=("test.sh exited with code $rc")
+  fi
+
+  report_result "$name" "$failed" "$output" "${reasons[@]}"
+}
+
+# Scrub-secrets fixtures use a different input format from the hook
+# fixtures: a plain `input` file is piped through the scrubber and the
+# captured stdout is matched against expect.txt using the same
+# + / - / EMPTY semantics. No case.json, no REPO_ROOT seeding.
+run_scrub_fixture() {
+  local fixture_dir="$1"
+  local name="${fixture_dir#$FIXTURES_DIR/}"
+
+  if [[ ! -x "$SCRUBBER" ]]; then
+    fail=$((fail + 1))
+    FAIL_NAMES+=("$name")
+    echo "FAIL: $name"
+    echo "  - scrubber is not executable at $SCRUBBER"
+    return 0
+  fi
+
+  local ctx
+  ctx=$("$SCRUBBER" < "$fixture_dir/input" 2>/dev/null || true)
+
+  local failed=false
+  local -a reasons=()
+
+  match_expectations "$fixture_dir/expect.txt" "$ctx" failed reasons
+  report_result "$name" "$failed" "$ctx" "${reasons[@]}"
+}
+
+while IFS= read -r -d '' fixture_dir; do
+  if [[ -f "$fixture_dir/test.sh" ]]; then
+    run_shell_fixture "$fixture_dir"
+  elif [[ -f "$fixture_dir/case.json" ]]; then
+    run_fixture "$fixture_dir"
+  elif [[ -f "$fixture_dir/input" ]]; then
+    run_scrub_fixture "$fixture_dir"
+  fi
+done < <(find "$FIXTURES_DIR" -mindepth 1 -type d -print0 | sort -z)
+
+echo
+echo "Total: $((pass + fail)), passed: $pass, failed: $fail"
+if [[ $fail -gt 0 ]]; then
+  exit 1
+fi
+exit 0

@@ -1,0 +1,3 @@
++VIOLATION: NoteServiceTest.java uses @SpringBootTest(RANDOM_PORT)
++Rename NoteServiceTest → NoteServiceIT
++Test class naming conventions

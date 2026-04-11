@@ -13,6 +13,7 @@ set -uo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 log_file="$repo_root/target/runner.log"
+scrubber="$repo_root/scripts/harness/lib/scrub-secrets.sh"
 error_pattern='^\[ERROR\]'
 label=""
 max_lines=20
@@ -52,11 +53,24 @@ if [[ $exit_code -eq 0 ]]; then
 fi
 
 echo "$label failed (exit $exit_code, ${elapsed}s)" >&2
+# Emit error lines to the agent AFTER passing them through the secret
+# scrubber. The raw log at $log_file (target/runner.log) intentionally
+# stays unscrubbed so operators debugging locally can see the original
+# bytes — the scrubber only guards what flows back into the Claude Code
+# conversation context via stderr.
 error_lines=$(grep -E "$error_pattern" "$log_file" | head -n "$max_lines" || true)
 if [[ -n "$error_lines" ]]; then
-  echo "$error_lines" >&2
+  if [[ -x "$scrubber" ]]; then
+    printf '%s\n' "$error_lines" | "$scrubber" >&2
+  else
+    printf '%s\n' "$error_lines" >&2
+  fi
 else
-  tail -n "$max_lines" "$log_file" >&2
+  if [[ -x "$scrubber" ]]; then
+    tail -n "$max_lines" "$log_file" | "$scrubber" >&2
+  else
+    tail -n "$max_lines" "$log_file" >&2
+  fi
 fi
 echo "Full log: $log_file" >&2
 exit "$exit_code"

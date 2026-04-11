@@ -1,0 +1,3 @@
++VIOLATION: NoteEndpointIT.java is an integration test that calls REST endpoints
++OpenApiContractValidator.assertResponseMatchesSpec
++.claude/rules/testing.md

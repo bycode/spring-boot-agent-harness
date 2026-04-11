@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class NotePools {
+    private final ExecutorService fixed = Executors.newFixedThreadPool(10);
+    private final ExecutorService cached = Executors.newCachedThreadPool();
+}

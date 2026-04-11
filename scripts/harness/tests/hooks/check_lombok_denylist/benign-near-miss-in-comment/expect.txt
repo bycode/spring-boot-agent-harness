@@ -1,0 +1,2 @@
+-VIOLATION: NoteDoc.java uses disallowed Lombok annotation
+-disallowed Lombok annotation(s): @

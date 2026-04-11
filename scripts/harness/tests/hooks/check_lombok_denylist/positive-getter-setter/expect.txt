@@ -1,0 +1,3 @@
++VIOLATION: Note.java uses disallowed Lombok annotation(s)
++@Getter
++@Setter

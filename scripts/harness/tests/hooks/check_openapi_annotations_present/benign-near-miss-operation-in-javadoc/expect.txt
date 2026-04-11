@@ -1,0 +1,2 @@
++VIOLATION: WidgetController.java: list() uses @GetMapping without a preceding @Operation annotation
++.claude/rules/rest.md

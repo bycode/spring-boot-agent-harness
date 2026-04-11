@@ -1,0 +1,10 @@
+package nl.jinsoo.template.notepad;
+
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class NoteServiceTest {
+    @SpyBean
+    NoteAuditor auditor;
+}

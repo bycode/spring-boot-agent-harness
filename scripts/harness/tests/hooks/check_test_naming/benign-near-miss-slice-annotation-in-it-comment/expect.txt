@@ -1,0 +1,5 @@
+-VIOLATION: NoteEndpointIT.java uses @DataJdbcTest
+-VIOLATION: NoteEndpointIT.java uses @WebMvcTest
+-VIOLATION: NoteEndpointIT.java uses @RestClientTest
+-VIOLATION: NoteEndpointIT.java uses @ApplicationModuleTest
+-slice/module annotations belong in *Test.java

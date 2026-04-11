@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# scripts/harness/install-git-hooks
+#
+# Idempotent installer for the Flyway migration-edit pre-commit guard.
+# Drops a marker-tagged block into .git/hooks/pre-commit that sources
+# scripts/harness/lib/hook-checks.sh and invokes check_migration_edit_guard
+# on the currently staged diff. Safe to re-run:
+#
+#   - Fresh repo (no pre-existing hook)         -> create the hook file
+#   - Re-run on this repo                        -> byte-identical result
+#   - Pre-existing custom pre-commit             -> append exactly once
+#
+# By default, the installer targets the git repo containing this script.
+# Test fixtures set HOOK_TARGET_ROOT to install into a synthetic repo
+# without moving this script.
+
+set -euo pipefail
+
+if [[ -n "${HOOK_TARGET_ROOT:-}" ]]; then
+  REPO_ROOT="$HOOK_TARGET_ROOT"
+else
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+fi
+
+HOOK_FILE="$REPO_ROOT/.git/hooks/pre-commit"
+MARKER="# HARNESS:migration-edit-guard"
+
+# The block we append (or the body of a freshly created file). The opening
+# `set -e` is only safe at the start of a fresh hook; when appending to an
+# existing hook we still include it because a pre-commit failure should
+# propagate regardless of what came before.
+HOOK_BLOCK=$(cat <<'BLOCK'
+
+# HARNESS:migration-edit-guard — DO NOT REMOVE
+# Installed by scripts/harness/install-git-hooks. Delegates to the shared
+# library so the guard logic lives in one place.
+set -e
+REPO_ROOT_FOR_GUARD="$(git rev-parse --show-toplevel)"
+. "$REPO_ROOT_FOR_GUARD/scripts/harness/lib/hook-checks.sh"
+check_migration_edit_guard "$REPO_ROOT_FOR_GUARD" || exit 1
+BLOCK
+)
+
+if [[ ! -f "$HOOK_FILE" ]]; then
+  mkdir -p "$(dirname "$HOOK_FILE")"
+  {
+    echo "#!/usr/bin/env bash"
+    echo "$HOOK_BLOCK"
+  } > "$HOOK_FILE"
+  chmod +x "$HOOK_FILE"
+  echo "Installed pre-commit guard at $HOOK_FILE"
+  exit 0
+fi
+
+if grep -qF "$MARKER" "$HOOK_FILE"; then
+  echo "pre-commit guard already installed (marker present). No changes."
+  exit 0
+fi
+
+echo "$HOOK_BLOCK" >> "$HOOK_FILE"
+chmod +x "$HOOK_FILE"
+echo "Appended pre-commit guard to existing $HOOK_FILE"

@@ -1,0 +1,7 @@
+package nl.jinsoo.template.notepad.rest;
+
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+
+@WebMvcTest(NoteController.class)
+class NoteControllerIT {
+}

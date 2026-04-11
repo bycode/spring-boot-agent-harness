@@ -1,0 +1,19 @@
+package nl.jinsoo.template.notepad;
+
+import lombok.Builder;
+import lombok.With;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class NoteLogger {
+
+    @Builder
+    record Event(String id) {}
+
+    @With
+    record Updated(String id, String name) {}
+
+    void log() {
+        log.info("event");
+    }
+}

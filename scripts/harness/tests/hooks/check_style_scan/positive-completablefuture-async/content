@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import java.util.concurrent.CompletableFuture;
+
+public class NoteAsync {
+    public CompletableFuture<String> compute() {
+        return CompletableFuture.supplyAsync(() -> "hello");
+    }
+}

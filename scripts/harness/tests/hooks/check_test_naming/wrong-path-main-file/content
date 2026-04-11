@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import org.springframework.boot.test.context.SpringBootTest;
+
+// A main-source file that (absurdly) carries a @SpringBootTest annotation.
+// The hook must not fire here because the path is not under src/test/java.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class NoteServiceTest {
+}

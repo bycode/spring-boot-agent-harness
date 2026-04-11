@@ -1,0 +1,2 @@
++"/notes" does not start with /api/
++.claude/rules/rest.md

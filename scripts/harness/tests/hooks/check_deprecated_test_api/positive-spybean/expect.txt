@@ -1,0 +1,2 @@
++VIOLATION: @SpyBean is deprecated for removal in Spring Boot 4 — replace with @MockitoSpyBean
++Project-standard Spring Boot 4 / Framework 7 test APIs
