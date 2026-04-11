@@ -12,9 +12,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/lib/hook-checks.sh"
 
 INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+# Single jq call parses all three fields in one invocation, emitting each on
+# its own line. Three sequential `read`s pull the fields from the same pipe.
+# (Using IFS=$'\t' + read would coalesce empty fields because tab is an IFS
+# whitespace char in bash; newline-separated output avoids that.)
+{
+  read -r TOOL
+  read -r FILE
+  read -r CMD
+} < <(
+  printf '%s' "$INPUT" \
+    | jq -r '.tool_name // "", .tool_input.file_path // "", .tool_input.command // ""'
+)
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 export TOOL FILE CMD INPUT REPO_ROOT

@@ -28,14 +28,58 @@
 #      benign-near-miss, wrong-path) — see tests/hooks/README.md.
 
 # -----------------------------------------------------------------------------
+# Shared helpers
+# These collapse the three repeated patterns that appear across most checks:
+#   - _guard_edit_write_java: dispatcher-guard for Edit|Write on a Java file
+#     under the requested scope (main|test|any). Returns 0 on match, 1 otherwise.
+#   - _has_import: true if FILE contains `import <regex>` at line start. The
+#     regex argument is the FQN tail (everything after `import[[:space:]]+`).
+#   - _grep_annotation_at_line_start: runs a single awk pass over FILE and
+#     emits each matching annotation name (without `@`) in caller order.
+# -----------------------------------------------------------------------------
+_guard_edit_write_java() {
+  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 1
+  case "$1" in
+    main) [[ "$FILE" == *src/main/java/*.java ]] ;;
+    test) [[ "$FILE" == *src/test/java/*.java ]] ;;
+    any)  [[ "$FILE" == *src/main/java/*.java || "$FILE" == *src/test/java/*.java ]] ;;
+  esac
+}
+
+_has_import() {
+  grep -Eq '^[[:space:]]*import[[:space:]]+'"$2" "$1" 2>/dev/null
+}
+
+_grep_annotation_at_line_start() {
+  local file="$1"
+  shift
+  (($#)) || return 0
+  awk -v names="$*" '
+    BEGIN {
+      n = split(names, arr, " ")
+      for (i = 1; i <= n; i++) {
+        pat[i] = "^[[:space:]]*@" arr[i] "([^A-Za-z0-9_]|$)"
+      }
+    }
+    {
+      for (i = 1; i <= n; i++) {
+        if (!seen[i] && $0 ~ pat[i]) { seen[i] = 1 }
+      }
+    }
+    END {
+      for (i = 1; i <= n; i++) if (seen[i]) print arr[i]
+    }
+  ' "$file" 2>/dev/null
+}
+
+# -----------------------------------------------------------------------------
 # check_test_reminder
 # Nudges the agent to write a test for any production Java file it just
 # created or edited.
 # Rule: testing.md § "Tests live with the code"
 # -----------------------------------------------------------------------------
 check_test_reminder() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/main/java/*.java ]] || return 0
+  _guard_edit_write_java main || return 0
   local bn
   bn=$(basename "$FILE" .java)
   [[ "$bn" == "package-info" ]] && return 0
@@ -51,7 +95,7 @@ check_test_reminder() {
 # Emits a single "EXEC PLAN CHECKPOINT:" chunk.
 #
 # Narrowing logic (avoids sibling-plan false positives during sequential
-# execution — see PLAN-0006 Block 1 Step 2):
+# execution):
 #
 #   - If the edited $FILE is itself a plan file under docs/exec-plans/active/,
 #     only inspect THAT plan.
@@ -67,30 +111,67 @@ check_test_reminder() {
 # Rule: exec-plans.md § "Execution discipline", § "Plan size limit"
 # -----------------------------------------------------------------------------
 check_plan_progress() {
+  # Patterns for Bash-branch triggering. Lifted to readonly locals so the
+  # regex is visible at function top instead of buried in two call sites.
+  local trigger_cmd_re='(mvnw|mvn|full-check|verify|spotless|smoke-startup|doc-lint|fast-check)'
+  local test_cmd_re='(verify|full-check|test)'
+
   local run=false
   if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]]; then
     run=true
-  elif [[ "$TOOL" == "Bash" ]] && echo "$CMD" | grep -qE 'mvnw|mvn|full-check|verify|spotless|smoke-startup|doc-lint|fast-check'; then
+  elif [[ "$TOOL" == "Bash" && "$CMD" =~ $trigger_cmd_re ]]; then
     run=true
   fi
   $run || return 0
+
+  local active_dir="$REPO_ROOT/docs/exec-plans/active"
+  [ -d "$active_dir" ] || return 0
+
+  # Single-pass awk that, given a plan file, extracts the `## Steps` section
+  # and counts: open ([ ]), in-progress ([~]), done ([x]) top-level steps,
+  # plus decision-log data rows and execution-notes bullets from their own
+  # sections. Emits one line: "open in_progress done_count dec_rows notes".
+  # Replaces the 1-awk + 3-grep + 2-awk-reread pattern of the previous
+  # implementation with one awk invocation per plan.
+  _plan_counts() {
+    awk '
+      /^## Steps/           { section = "steps";  next }
+      /^## Decision log/    { section = "dec";    next }
+      /^## Execution notes/ { section = "notes";  next }
+      /^## /                { section = ""        }
+      section == "steps" && /^- \[ \]/  { open++ }
+      section == "steps" && /^- \[~\]/  { in_progress++ }
+      section == "steps" && /^- \[x\]/  { done_count++ }
+      section == "dec"    && /^\| [0-9]{4}-[0-9]{2}-[0-9]{2}/ { dec++ }
+      section == "notes"  && /^- /      { notes++ }
+      END {
+        printf "%d %d %d %d %d\n",
+          open + 0, in_progress + 0, done_count + 0, dec + 0, notes + 0
+      }
+    ' "$1"
+  }
 
   # Build the candidate plan list. Three cases:
   #   1. Edited file is a plan under docs/exec-plans/active/ -> just that plan.
   #   2. Otherwise, plans with a [~] marker -> those plans.
   #   3. Otherwise, fall back to the most-recently-edited active plan.
-  local -a candidates=()
-  local active_dir="$REPO_ROOT/docs/exec-plans/active"
-  [ -d "$active_dir" ] || return 0
+  #
+  # Caches awk results per candidate via parallel indexed arrays keyed by
+  # array index, so the main loop does not re-read the plan file.
+  local -a candidates=() counts_cache=()
 
   if [[ "$FILE" == "$active_dir/"*.md ]]; then
     candidates=("$FILE")
+    counts_cache=("$(_plan_counts "$FILE")")
   else
-    local plan
+    local plan counts ip
     for plan in "$active_dir"/*.md; do
       [ -e "$plan" ] || continue
-      if awk '/^## Steps$/,/^## [^S]/' "$plan" 2>/dev/null | grep -q '^\- \[~\]'; then
+      counts=$(_plan_counts "$plan")
+      ip=${counts#* }; ip=${ip%% *}
+      if [ "$ip" -gt 0 ]; then
         candidates+=("$plan")
+        counts_cache+=("$counts")
       fi
     done
     if ((${#candidates[@]} == 0)); then
@@ -100,25 +181,24 @@ check_plan_progress() {
       # may lack a git history.
       local newest
       newest=$(ls -t "$active_dir"/*.md 2>/dev/null | head -n1)
-      [ -n "$newest" ] && candidates=("$newest")
+      if [ -n "$newest" ]; then
+        candidates=("$newest")
+        counts_cache=("$(_plan_counts "$newest")")
+      fi
     fi
   fi
 
   ((${#candidates[@]} == 0)) && return 0
 
   local plan_msg=""
-  local plan name steps_section open in_progress done_count total tool_exit
-  for plan in "${candidates[@]}"; do
+  local i plan name open in_progress done_count dec_count notes_count total tool_exit
+  for i in "${!candidates[@]}"; do
+    plan="${candidates[$i]}"
     [ -e "$plan" ] || continue
     name=$(basename "$plan")
+    read -r open in_progress done_count dec_count notes_count <<< "${counts_cache[$i]}"
 
-    # Extract only the ## Steps section to avoid counting DoD/contract checklists.
-    steps_section=$(awk '/^## Steps$/,/^## [^S]/' "$plan" 2>/dev/null | sed '$d')
-    open=$(echo "$steps_section" | grep -c '^\- \[ \]' 2>/dev/null || true)
-    in_progress=$(echo "$steps_section" | grep -c '^\- \[~\]' 2>/dev/null || true)
-    done_count=$(echo "$steps_section" | grep -c '^\- \[x\]' 2>/dev/null || true)
-
-    if [[ "$TOOL" == "Bash" ]] && [ "$in_progress" -gt 0 ] && echo "$CMD" | grep -qE 'verify|full-check|test'; then
+    if [[ "$TOOL" == "Bash" ]] && [ "$in_progress" -gt 0 ] && [[ "$CMD" =~ $test_cmd_re ]]; then
       tool_exit=$(echo "$INPUT" | jq -r '.tool_result.exit_code // empty')
       if [ "$tool_exit" = "0" ]; then
         plan_msg="${plan_msg}  Warning: ${name}: Tests passed with step still [~]. Mark it [x] and add execution notes before continuing.\n"
@@ -139,33 +219,12 @@ check_plan_progress() {
     elif [ "$done_count" -gt 0 ] && [ "$in_progress" -eq 0 ]; then
       plan_msg="${plan_msg}  PLAN: ${name}: All items checked. Move to docs/exec-plans/completed/\n"
 
-      # Pre-finalization check: plan is complete but may have empty
-      # decision log / execution notes. Warn once per content gap so the
-      # plan isn't closed with blank sections.
-      #
-      # Decision log "non-empty" = at least one data row between `## Decision log`
-      # and the next `## ` header that starts with `| <4-digit-year>-...`.
-      local dec_count
-      dec_count=$(awk '
-        /^## Decision log/ { inside = 1; next }
-        /^## / { inside = 0 }
-        inside && /^\| [0-9]{4}-[0-9]{2}-[0-9]{2}/ { n++ }
-        END { print n + 0 }
-      ' "$plan" 2>/dev/null)
-      if [ "${dec_count:-0}" -eq 0 ]; then
+      # Pre-finalization checks: decision log and execution notes counts
+      # come from the same awk pass that populated counts_cache.
+      if [ "$dec_count" -eq 0 ]; then
         plan_msg="${plan_msg}  Warning: ${name}: plan is complete but decision log is empty — add at least one row before moving to completed/\n"
       fi
-
-      # Execution notes "non-empty" = at least one `- ` bullet line between
-      # `## Execution notes` and the next `## ` header.
-      local notes_count
-      notes_count=$(awk '
-        /^## Execution notes/ { inside = 1; next }
-        /^## / { inside = 0 }
-        inside && /^- / { n++ }
-        END { print n + 0 }
-      ' "$plan" 2>/dev/null)
-      if [ "${notes_count:-0}" -eq 0 ]; then
+      if [ "$notes_count" -eq 0 ]; then
         plan_msg="${plan_msg}  Warning: ${name}: plan is complete but execution notes are empty — add a block summary before moving to completed/\n"
       fi
     fi
@@ -187,8 +246,7 @@ check_plan_progress() {
 # Rule: testing.md § "Test class naming conventions"
 # -----------------------------------------------------------------------------
 check_test_naming() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/test/java/*.java ]] || return 0
+  _guard_edit_write_java test || return 0
   [ -f "$FILE" ] || return 0
   local bn
   bn=$(basename "$FILE" .java)
@@ -202,17 +260,16 @@ check_test_naming() {
   fi
 
   if [[ "$bn" == *IT ]]; then
-    # Slice/module annotation in an *IT file.
-    local ann annfound=""
-    for ann in '@DataJdbcTest' '@WebMvcTest' '@RestClientTest' '@ApplicationModuleTest'; do
-      if grep -Eq "^[[:space:]]*${ann}\b" "$FILE" 2>/dev/null; then
-        annfound="$ann"
-        break
-      fi
-    done
+    # Slice/module annotation in an *IT file — first match wins. The helper
+    # returns each matching name on its own line in caller order, so `head -n1`
+    # picks the first one in that order.
+    local annfound
+    annfound=$(_grep_annotation_at_line_start "$FILE" \
+      DataJdbcTest WebMvcTest RestClientTest ApplicationModuleTest \
+      | head -n1)
     if [[ -n "$annfound" ]]; then
       [[ -n "$out" ]] && out="${out}\n\n"
-      out="${out}VIOLATION: ${bn}.java uses ${annfound} but the basename ends in IT — slice/module annotations belong in *Test.java files. Rename ${bn} → ${bn%IT}Test (see .claude/rules/testing.md § \"Test class naming conventions\")."
+      out="${out}VIOLATION: ${bn}.java uses @${annfound} but the basename ends in IT — slice/module annotations belong in *Test.java files. Rename ${bn} → ${bn%IT}Test (see .claude/rules/testing.md § \"Test class naming conventions\")."
     fi
   fi
 
@@ -230,38 +287,38 @@ check_test_naming() {
 #       testing.md § "Testcontainers 2.x import paths"
 # -----------------------------------------------------------------------------
 check_deprecated_test_api() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/test/java/*.java ]] || return 0
+  _guard_edit_write_java test || return 0
   [ -f "$FILE" ] || return 0
   local out="" hits=()
 
   # Annotation-start anchored patterns (tight: ignores occurrences in // comments).
-  if grep -Eq '^[[:space:]]*@MockBean\b' "$FILE" 2>/dev/null; then
-    hits+=("@MockBean is deprecated for removal in Spring Boot 4 — replace with @MockitoBean")
-  fi
-  if grep -Eq '^[[:space:]]*@SpyBean\b' "$FILE" 2>/dev/null; then
-    hits+=("@SpyBean is deprecated for removal in Spring Boot 4 — replace with @MockitoSpyBean")
-  fi
+  local ann
+  while IFS= read -r ann; do
+    case "$ann" in
+      MockBean) hits+=("@MockBean is deprecated for removal in Spring Boot 4 — replace with @MockitoBean") ;;
+      SpyBean)  hits+=("@SpyBean is deprecated for removal in Spring Boot 4 — replace with @MockitoSpyBean") ;;
+    esac
+  done < <(_grep_annotation_at_line_start "$FILE" MockBean SpyBean)
 
   # Type-name patterns: match ONLY on the import statement. This keeps the
   # anchor tight enough that identifiers mentioned inside a `// comment` or
   # a string literal do not misfire. (A usage site without the import is
   # impossible in Java, so import-anchored detection is sufficient.)
-  if grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.TestRestTemplate[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" '[A-Za-z0-9_.]*\.TestRestTemplate[[:space:]]*;'; then
     hits+=("TestRestTemplate is not a project-standard Spring Boot 4 test API — use RestTestClient for full HTTP integration tests")
   fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.SpringRunner[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" '[A-Za-z0-9_.]*\.SpringRunner[[:space:]]*;'; then
     hits+=("SpringRunner is JUnit 4 — Spring Framework 7 requires JUnit 6. Remove @RunWith or replace with JUnit 6 @ExtendWith(SpringExtension.class)")
   fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.SpringClassRule[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" '[A-Za-z0-9_.]*\.SpringClassRule[[:space:]]*;'; then
     hits+=("SpringClassRule is a JUnit 4 rule — obsolete in JUnit 6. Remove it (see .claude/rules/testing.md § \"JUnit 6 baseline\")")
   fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.SpringMethodRule[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" '[A-Za-z0-9_.]*\.SpringMethodRule[[:space:]]*;'; then
     hits+=("SpringMethodRule is a JUnit 4 rule — obsolete in JUnit 6. Remove it (see .claude/rules/testing.md § \"JUnit 6 baseline\")")
   fi
 
   # Testcontainers 2.x relocated PostgreSQLContainer — flag the legacy import.
-  if grep -Eq '^[[:space:]]*import[[:space:]]+org\.testcontainers\.containers\.PostgreSQLContainer[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" 'org\.testcontainers\.containers\.PostgreSQLContainer[[:space:]]*;'; then
     hits+=("org.testcontainers.containers.PostgreSQLContainer is the Testcontainers 1.x path — use org.testcontainers.postgresql.PostgreSQLContainer (see .claude/rules/testing.md § \"Testcontainers 2.x import paths\")")
   fi
 
@@ -288,8 +345,7 @@ check_deprecated_test_api() {
 # Rule: testing.md § "OpenAPI contract validation"
 # -----------------------------------------------------------------------------
 check_contract_validator_in_it() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/test/java/*.java ]] || return 0
+  _guard_edit_write_java test || return 0
   local bn
   bn=$(basename "$FILE" .java)
   [[ "$bn" == *IT ]] || return 0
@@ -298,12 +354,10 @@ check_contract_validator_in_it() {
   # Does the test exercise an endpoint via a project-standard client? We
   # detect via the import statement to avoid false positives on identifiers
   # that only appear inside a comment or string literal.
-  if ! grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.(RestTestClient|MockMvcTester)[[:space:]]*;' "$FILE" 2>/dev/null; then
-    return 0
-  fi
+  _has_import "$FILE" '[A-Za-z0-9_.]*\.(RestTestClient|MockMvcTester)[[:space:]]*;' || return 0
 
   # Bail if the validator is already imported.
-  if grep -Eq '^[[:space:]]*import[[:space:]]+[A-Za-z0-9_.]*\.OpenApiContractValidator[[:space:]]*;' "$FILE" 2>/dev/null; then
+  if _has_import "$FILE" '[A-Za-z0-9_.]*\.OpenApiContractValidator[[:space:]]*;'; then
     return 0
   fi
 
@@ -322,16 +376,14 @@ check_contract_validator_in_it() {
 # Rule: code-style.md § "Lombok"
 # -----------------------------------------------------------------------------
 check_lombok_denylist() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/main/java/*.java ]] || return 0
+  _guard_edit_write_java main || return 0
   [ -f "$FILE" ] || return 0
 
   local out="" hits=() ann
-  for ann in '@Data' '@Getter' '@Setter' '@Value' '@AllArgsConstructor' '@NoArgsConstructor' '@RequiredArgsConstructor'; do
-    if grep -Eq "^[[:space:]]*${ann}\b" "$FILE" 2>/dev/null; then
-      hits+=("$ann")
-    fi
-  done
+  while IFS= read -r ann; do
+    [[ -n "$ann" ]] && hits+=("@$ann")
+  done < <(_grep_annotation_at_line_start "$FILE" \
+    Data Getter Setter Value AllArgsConstructor NoArgsConstructor RequiredArgsConstructor)
 
   if ((${#hits[@]} > 0)); then
     local list
@@ -376,96 +428,99 @@ check_lombok_denylist() {
 # Rule: code-style.md, rest.md, virtual-threads.md
 # -----------------------------------------------------------------------------
 check_style_scan() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/main/java/*.java ]] || return 0
+  _guard_edit_write_java main || return 0
   [ -f "$FILE" ] || return 0
 
   local bn
   bn=$(basename "$FILE" .java)
-  local hits=()
 
-  # --- Null safety (code-style.md § "Null safety") ---
-  if grep -Eq '^[[:space:]]*import[[:space:]]+javax\.annotation\.(Nullable|Nonnull)\b' "$FILE" 2>/dev/null; then
-    hits+=("legacy JSR-305 nullness annotation (javax.annotation.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")")
-  fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+org\.jetbrains\.annotations\.(Nullable|NotNull)\b' "$FILE" 2>/dev/null; then
-    hits+=("JetBrains nullness annotation (org.jetbrains.annotations.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")")
-  fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+edu\.umd\.cs\.findbugs\.annotations\.' "$FILE" 2>/dev/null; then
-    hits+=("FindBugs/SpotBugs nullness annotation (edu.umd.cs.findbugs.annotations.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")")
-  fi
+  # Single awk pass runs every Tier-B style pattern against each non-comment
+  # line, emitting one label per hit (newline-separated, stable order). The
+  # label is used below to build the VIOLATION text — keeping the message
+  # strings in bash avoids awk string-quoting issues. Replaces the previous
+  # ~17 sequential `grep -E` + `grep -qvE` pipelines.
+  #
+  # `\b` is not portable in mawk, so patterns use `[^A-Za-z0-9_]` (or end-of-
+  # line via `$`) to reject word-char continuation.
+  local labels
+  labels=$(awk '
+    BEGIN { W = "([^A-Za-z0-9_]|$)" }
+    # Skip blank lines.
+    /^[[:space:]]*$/ { next }
+    # Skip line comments, javadoc opens, and javadoc continuation lines.
+    /^[[:space:]]*(\/\/|\*|\/\*)/ { next }
 
-  # --- Functional style (code-style.md § "Functional style") ---
-  # Anchor: exclude lines whose first non-whitespace token is // or * so the
-  # pattern stays silent inside // comments and Javadoc blocks.
-  if grep -En 'Collectors\.toList\(\)' "$FILE" 2>/dev/null \
-     | grep -qvE '^[0-9]+:[[:space:]]*(//|\*)'; then
-    hits+=("Collectors.toList() — prefer Stream.toList() which returns an unmodifiable list (.claude/rules/code-style.md § \"Functional style\")")
-  fi
+    # --- Imports (line-start anchored — safe regardless of the filter) ---
+    $0 ~ ("^[[:space:]]*import[[:space:]]+javax\\.annotation\\.(Nullable|Nonnull)" W) { h["nullness-jsr305"] = 1 }
+    $0 ~ ("^[[:space:]]*import[[:space:]]+org\\.jetbrains\\.annotations\\.(Nullable|NotNull)" W) { h["nullness-jetbrains"] = 1 }
+    /^[[:space:]]*import[[:space:]]+edu\.umd\.cs\.findbugs\.annotations\./ { h["nullness-findbugs"] = 1 }
+    /^[[:space:]]*import[[:space:]]+org\.slf4j\.LoggerFactory[[:space:]]*;/ { h["manual-logger"] = 1 }
+    $0 ~ ("^[[:space:]]*import[[:space:]]+reactor\\.core\\.publisher\\.(Mono|Flux)" W) { h["reactor-import"] = 1 }
+    /^[[:space:]]*import[[:space:]]+org\.mapstruct\./ { h["mapstruct-import"] = 1 }
+    /^[[:space:]]*import[[:space:]]+org\.modelmapper\./ { h["modelmapper-import"] = 1 }
 
-  # --- Logging (code-style.md § "Logging") ---
-  if grep -Eq '^[[:space:]]*import[[:space:]]+org\.slf4j\.LoggerFactory[[:space:]]*;' "$FILE" 2>/dev/null; then
-    hits+=("manual LoggerFactory import — use Lombok @Slf4j instead of LoggerFactory.getLogger() (.claude/rules/code-style.md § \"Logging\")")
-  fi
+    # --- Annotations (line-start anchored) ---
+    $0 ~ ("^[[:space:]]*@CrossOrigin" W) { h["crossorigin"] = 1 }
+    $0 ~ ("^[[:space:]]*@RestController" W) { has_restcontroller = 1 }
+    $0 ~ ("^[[:space:]]*@Validated" W) { has_validated = 1 }
 
-  # --- REST: @CrossOrigin (rest.md § "URI design") ---
-  if grep -Eq '^[[:space:]]*@CrossOrigin\b' "$FILE" 2>/dev/null; then
-    hits+=("@CrossOrigin on controller — CORS is handled centrally in SecurityConfig; per-controller @CrossOrigin bypasses the security filter chain (.claude/rules/rest.md § \"URI design\")")
-  fi
-
-  # --- REST: @Validated on @RestController (rest.md § "Controller responsibilities") ---
-  if grep -Eq '^[[:space:]]*@RestController\b' "$FILE" 2>/dev/null \
-     && grep -Eq '^[[:space:]]*@Validated\b' "$FILE" 2>/dev/null; then
-    hits+=("@Validated alongside @RestController — Spring MVC 7 validates @RequestParam/@PathVariable natively; adding @Validated causes double-validation (.claude/rules/rest.md § \"Controller responsibilities\")")
-  fi
-
-  # --- REST: mapping path must start with /api/ (rest.md § "URI design") ---
-  # Use awk to find lines with @*Mapping("...") and check the quoted path prefix.
-  local bad_mapping
-  bad_mapping=$(awk '
+    # --- Non-/api mapping path (line-start anchored) ---
     /^[[:space:]]*@(Get|Post|Put|Delete|Patch|Request)Mapping[[:space:]]*\(/ {
-      if (match($0, /"[^"]+"/)) {
+      if (!bad_mapping && match($0, /"[^"]+"/)) {
         path = substr($0, RSTART+1, RLENGTH-2)
         if (path !~ /^\/api\//) {
-          print path
-          exit
+          bad_mapping = path
         }
       }
     }
+
+    # --- Substring patterns (rely on the comment-filter above) ---
+    /Collectors\.toList\(\)/                       { h["collectors-tolist"] = 1 }
+    /Executors\.newFixedThreadPool[[:space:]]*\(/  { h["executors-newfixed"] = 1 }
+    /Executors\.newCachedThreadPool[[:space:]]*\(/ { h["executors-newcached"] = 1 }
+    /CompletableFuture\.supplyAsync[[:space:]]*\(/ { h["completablefuture-async"] = 1 }
+    /ThreadLocal\.withInitial[[:space:]]*\(/       { h["threadlocal-withinitial"] = 1 }
+
+    END {
+      if (has_restcontroller && has_validated) h["validated-restcontroller"] = 1
+      # Stable output order that matches the original sequential-grep order.
+      split("nullness-jsr305 nullness-jetbrains nullness-findbugs collectors-tolist manual-logger crossorigin validated-restcontroller bad-mapping reactor-import mapstruct-import modelmapper-import executors-newfixed executors-newcached completablefuture-async threadlocal-withinitial", order, " ")
+      for (i = 1; i in order; i++) {
+        if (order[i] == "bad-mapping" && bad_mapping) print order[i] "\t" bad_mapping
+        else if (order[i] != "bad-mapping" && h[order[i]]) print order[i]
+      }
+    }
   ' "$FILE" 2>/dev/null)
-  if [[ -n "$bad_mapping" ]]; then
-    hits+=("REST mapping path \"$bad_mapping\" does not start with /api/ — all REST endpoints must live under the /api/ prefix (.claude/rules/rest.md § \"URI design\")")
-  fi
 
-  # --- Virtual threads: reactor, mapping-framework imports, pool creation ---
-  if grep -Eq '^[[:space:]]*import[[:space:]]+reactor\.core\.publisher\.(Mono|Flux)\b' "$FILE" 2>/dev/null; then
-    hits+=("import reactor.core.publisher.(Mono|Flux) — virtual threads make reactive unnecessary; write straightforward synchronous code instead (.claude/rules/virtual-threads.md § \"Do NOT\")")
-  fi
+  [[ -z "$labels" ]] && return 0
 
-  if grep -Eq '^[[:space:]]*import[[:space:]]+org\.mapstruct\.' "$FILE" 2>/dev/null; then
-    hits+=("import org.mapstruct.* — no mapping frameworks; write explicit mappings at boundaries (.claude/rules/code-style.md § \"Modeling and framework boundaries\")")
-  fi
-  if grep -Eq '^[[:space:]]*import[[:space:]]+org\.modelmapper\.' "$FILE" 2>/dev/null; then
-    hits+=("import org.modelmapper.* — no mapping frameworks; write explicit mappings at boundaries (.claude/rules/code-style.md § \"Modeling and framework boundaries\")")
-  fi
+  # Label → message map. `bad-mapping` is special-cased because the path is
+  # interpolated at runtime.
+  local -A MSG=(
+    [nullness-jsr305]="legacy JSR-305 nullness annotation (javax.annotation.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")"
+    [nullness-jetbrains]="JetBrains nullness annotation (org.jetbrains.annotations.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")"
+    [nullness-findbugs]="FindBugs/SpotBugs nullness annotation (edu.umd.cs.findbugs.annotations.*) — use JSpecify @Nullable / NullMarked (.claude/rules/code-style.md § \"Null safety\")"
+    [collectors-tolist]="Collectors.toList() — prefer Stream.toList() which returns an unmodifiable list (.claude/rules/code-style.md § \"Functional style\")"
+    [manual-logger]="manual LoggerFactory import — use Lombok @Slf4j instead of LoggerFactory.getLogger() (.claude/rules/code-style.md § \"Logging\")"
+    [crossorigin]="@CrossOrigin on controller — CORS is handled centrally in SecurityConfig; per-controller @CrossOrigin bypasses the security filter chain (.claude/rules/rest.md § \"URI design\")"
+    [validated-restcontroller]="@Validated alongside @RestController — Spring MVC 7 validates @RequestParam/@PathVariable natively; adding @Validated causes double-validation (.claude/rules/rest.md § \"Controller responsibilities\")"
+    [reactor-import]="import reactor.core.publisher.(Mono|Flux) — virtual threads make reactive unnecessary; write straightforward synchronous code instead (.claude/rules/virtual-threads.md § \"Do NOT\")"
+    [mapstruct-import]="import org.mapstruct.* — no mapping frameworks; write explicit mappings at boundaries (.claude/rules/code-style.md § \"Modeling and framework boundaries\")"
+    [modelmapper-import]="import org.modelmapper.* — no mapping frameworks; write explicit mappings at boundaries (.claude/rules/code-style.md § \"Modeling and framework boundaries\")"
+    [executors-newfixed]="Executors.newFixedThreadPool( — no fixed thread pools for IO-bound work; virtual threads handle IO concurrency (.claude/rules/virtual-threads.md § \"Do NOT\")"
+    [executors-newcached]="Executors.newCachedThreadPool( — no cached thread pools for IO-bound work; virtual threads handle IO concurrency (.claude/rules/virtual-threads.md § \"Do NOT\")"
+    [completablefuture-async]="CompletableFuture.supplyAsync( — do not introduce callback/async patterns to avoid blocking; blocking is fine on virtual threads (.claude/rules/virtual-threads.md § \"Do NOT\")"
+    [threadlocal-withinitial]="ThreadLocal.withInitial( — custom ThreadLocal with virtual threads causes memory pressure; use Spring's context propagation (RequestAttributes, SecurityContextHolder, MDC) (.claude/rules/virtual-threads.md § \"Do NOT\")"
+  )
 
-  # Pool / thread-local anti-patterns. Anchor: line must not start with // or *.
-  if grep -En 'Executors\.newFixedThreadPool[[:space:]]*\(' "$FILE" 2>/dev/null \
-     | grep -qvE '^[0-9]+:[[:space:]]*(//|\*)'; then
-    hits+=("Executors.newFixedThreadPool( — no fixed thread pools for IO-bound work; virtual threads handle IO concurrency (.claude/rules/virtual-threads.md § \"Do NOT\")")
-  fi
-  if grep -En 'Executors\.newCachedThreadPool[[:space:]]*\(' "$FILE" 2>/dev/null \
-     | grep -qvE '^[0-9]+:[[:space:]]*(//|\*)'; then
-    hits+=("Executors.newCachedThreadPool( — no cached thread pools for IO-bound work; virtual threads handle IO concurrency (.claude/rules/virtual-threads.md § \"Do NOT\")")
-  fi
-  if grep -En 'CompletableFuture\.supplyAsync[[:space:]]*\(' "$FILE" 2>/dev/null \
-     | grep -qvE '^[0-9]+:[[:space:]]*(//|\*)'; then
-    hits+=("CompletableFuture.supplyAsync( — do not introduce callback/async patterns to avoid blocking; blocking is fine on virtual threads (.claude/rules/virtual-threads.md § \"Do NOT\")")
-  fi
-  if grep -En 'ThreadLocal\.withInitial[[:space:]]*\(' "$FILE" 2>/dev/null \
-     | grep -qvE '^[0-9]+:[[:space:]]*(//|\*)'; then
-    hits+=("ThreadLocal.withInitial( — custom ThreadLocal with virtual threads causes memory pressure; use Spring's context propagation (RequestAttributes, SecurityContextHolder, MDC) (.claude/rules/virtual-threads.md § \"Do NOT\")")
-  fi
+  local hits=() label path
+  while IFS=$'\t' read -r label path; do
+    if [[ "$label" == "bad-mapping" ]]; then
+      hits+=("REST mapping path \"$path\" does not start with /api/ — all REST endpoints must live under the /api/ prefix (.claude/rules/rest.md § \"URI design\")")
+    else
+      hits+=("${MSG[$label]}")
+    fi
+  done <<< "$labels"
 
   if ((${#hits[@]} > 0)); then
     local first=true h out=""
@@ -553,8 +608,8 @@ check_session_block_structure() {
 # Rule: rest.md § "OpenAPI annotations (mandatory)"
 # -----------------------------------------------------------------------------
 check_openapi_annotations_present() {
-  [[ "$TOOL" == "Edit" || "$TOOL" == "Write" ]] || return 0
-  [[ "$FILE" == *src/main/java/*/rest/*Controller.java ]] || return 0
+  _guard_edit_write_java main || return 0
+  [[ "$FILE" == */rest/*Controller.java ]] || return 0
   [ -f "$FILE" ] || return 0
 
   local bn
@@ -646,7 +701,7 @@ check_openapi_annotations_present() {
         if (name == "") {
           name = "<line " mapping_line ">"
         }
-        print mapping_verb "\t" name "\t" mapping_line
+        print mapping_verb "\t" name
       }
       reset_block()
       next
@@ -654,8 +709,8 @@ check_openapi_annotations_present() {
   ' "$FILE" 2>/dev/null)
 
   if [[ -n "$bad_methods" ]]; then
-    local line verb_hit name_hit _lineno_hit
-    while IFS=$'\t' read -r verb_hit name_hit _lineno_hit; do
+    local verb_hit name_hit
+    while IFS=$'\t' read -r verb_hit name_hit; do
       [[ -z "$verb_hit" ]] && continue
       hits+=("${bn}.java: ${name_hit}() uses @${verb_hit}Mapping without a preceding @Operation annotation. Every operation must document itself via @Operation. See .claude/rules/rest.md § \"OpenAPI annotations (mandatory)\".")
     done <<< "$bad_methods"
