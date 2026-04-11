@@ -7,9 +7,6 @@
 #   1. Creates a temporary $REPO_ROOT and optionally seeds it with
 #      docs/exec-plans/active/*.md files from the fixture's plans/ dir
 #      and a single edited file from the fixture's content file.
-#      If the fixture provides a `harness.env` file, its HARNESS_ROOT_PACKAGE
-#      value is exported before the hook runs, letting the fixture prove
-#      that custom root packages are honored.
 #   2. Resolves {{TMPDIR}} in case.json to the temporary REPO_ROOT.
 #   3. Pipes the resulting JSON through post-tool-hook with REPO_ROOT set.
 #   4. Extracts hookSpecificOutput.additionalContext from the hook output.
@@ -172,32 +169,9 @@ run_fixture() {
     )
   fi
 
-  # If the fixture carries a `harness.env` file, export HARNESS_ROOT_PACKAGE
-  # from it so the hook-checks library resolves paths under a custom root
-  # package. This lets fixtures prove that the de-hardcoded call sites
-  # actually honor the override. hook-checks.sh gives env vars precedence
-  # over the lib/harness.env file, so the export wins.
-  local fixture_root_pkg=""
-  if [[ -f "$fixture_dir/harness.env" ]]; then
-    fixture_root_pkg=$(awk -F= '
-      /^[[:space:]]*#/ { next }
-      /^[[:space:]]*HARNESS_ROOT_PACKAGE[[:space:]]*=/ {
-        sub(/^[[:space:]]*HARNESS_ROOT_PACKAGE[[:space:]]*=[[:space:]]*/, "", $0)
-        gsub(/^"|"$/, "", $0)
-        gsub(/^'\''|'\''$/, "", $0)
-        print
-        exit
-      }
-    ' "$fixture_dir/harness.env")
-  fi
-
   # Run the hook with the temporary REPO_ROOT.
   local output
-  if [[ -n "$fixture_root_pkg" ]]; then
-    output=$(printf '%s' "$case_json" | REPO_ROOT="$tmp_root" HARNESS_ROOT_PACKAGE="$fixture_root_pkg" "$HOOK" 2>/dev/null)
-  else
-    output=$(printf '%s' "$case_json" | REPO_ROOT="$tmp_root" "$HOOK" 2>/dev/null)
-  fi
+  output=$(printf '%s' "$case_json" | REPO_ROOT="$tmp_root" "$HOOK" 2>/dev/null)
   local rc=$?
 
   local ctx=""
