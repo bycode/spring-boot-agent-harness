@@ -84,7 +84,7 @@ A finished module contains:
 
 Use `scripts/harness/new-module <module-name> <flat|standard> [allowed-dependencies]` to scaffold. The script generates the directory structure, `package-info.java` files, initial API interface, domain record, module contract, and module-local `AGENTS.md`.
 
-After scaffolding, fill in the TODOs in the generated module contract and implement the module following the anatomy above. Run `scripts/harness/mvn -q verify` as a post-scaffold sanity check. Use `scripts/harness/full-check` as the completion gate before considering the module done.
+After scaffolding, replace every `_…_` placeholder in the generated module contract with real ownership and behavioral detail, then implement the module following the anatomy above. Run `scripts/harness/mvn -q verify` as a post-scaffold sanity check. Use `scripts/harness/full-check` as the completion gate before considering the module done.
 
 ## Module contracts
 
@@ -97,6 +97,8 @@ After scaffolding, fill in the TODOs in the generated module contract and implem
   ```
 - See `MODULE-TEMPLATE.md` for required structure
 - Module boundaries must enable safe parallel work — no shared mutable state across module boundaries
+
+Module contracts document behavioral obligations (consumer surface, idempotency, pagination, event contracts) that ArchUnit cannot express. Public type enumeration and dependency enforcement are owned by `@ApplicationModule` + `ApplicationModules.verify()`.
 
 ## Anti-patterns
 

@@ -133,7 +133,7 @@ cat >"$module_agents" <<EOF
 This module was scaffolded by \`scripts/harness/new-module\`. The enforced source of truth for ownership, API, and validation details is [${module_name}.md](../../../../../../../.claude/rules/modules/${module_name}.md).
 
 ## Purpose
-TODO: describe what the module owns.
+_describe what the module owns_
 
 ## Local Workflow Rules
 - Module type: $pattern
@@ -141,7 +141,7 @@ TODO: describe what the module owns.
 - Keep the module root package as the published API only.
 
 ## Change Rules
-- Update [${module_name}.md](../../../../../../../.claude/rules/modules/${module_name}.md) until all TODO sections there are replaced with real ownership and validation details.
+- Update [${module_name}.md](../../../../../../../.claude/rules/modules/${module_name}.md) until every \`_…_\` placeholder is replaced with real ownership and validation details.
 - Keep \`package-info.java\` aligned with the real allowed dependencies.
 - Use \`scripts/harness/full-check\` before considering the scaffolded module complete.
 EOF
@@ -155,20 +155,16 @@ paths:
 
 # ${module_class} module contract
 
+> Fill in every placeholder marked \`_…_\` below before committing. \`scripts/harness/doc-lint\` enforces contract completeness.
+
 ## Purpose
-TODO: describe what the module owns.
+_describe what the module owns_
 
 ## Complexity
 $pattern
 
-## Public API (root package)
-
-| Type | Role |
-|------|------|
-| \`${module_class}API\` | Module API interface |
-| \`${module_class}\` | Domain record |
-
-Event records also live in the root package — they are part of the public API. Consumer modules import event classes from the publisher.
+## Source of truth
+Public API and allowed dependencies are declared in \`package-info.java\` via \`@ApplicationModule(allowedDependencies = ...)\` and enforced by \`ApplicationModules.verify()\` at test time. See https://docs.spring.io/spring-modulith/reference/fundamentals.html.
 EOF
 
 if [[ "$pattern" == "standard" ]]; then
@@ -186,21 +182,16 @@ fi
 
 cat >>"$module_contract" <<EOF
 
-## Allowed dependencies
-$allowed_deps
-
-**Important:** Mirror this list in \`package-info.java\` using \`@ApplicationModule(allowedDependencies = ...)\`. Without that, Spring Modulith does not enforce the boundary — this markdown is documentation only.
-
 ## Cross-module communication
 - **Direct API calls** for any interaction that needs a result or synchronous coordination.
 - **Events** for state-changing notifications (fire-and-forget, "this happened, react if you care").
 - Never use events as a request/response mechanism — if you need an answer, call the API.
 
 ## Owned resources
-- **Database table(s):** TODO
-- **REST endpoints:** TODO
-- **Events published:** TODO
-- **Events consumed:** TODO
+- **Database table(s):** _none_
+- **REST endpoints:** _none_
+- **Events published:** _none_
+- **Events consumed:** _none_
 
 ## Consumer surface
 
@@ -208,18 +199,18 @@ $allowed_deps
 
 | Endpoint | Method | Request body | Success response | Error responses |
 |----------|--------|-------------|-----------------|-----------------|
-| TODO | TODO | TODO | TODO | TODO |
+| _path_ | _verb_ | _shape_ | _status + shape_ | _codes_ |
 
 ### Behavioral notes
-TODO: intent, idempotency, retry-safety, UX expectations.
+_intent, idempotency, retry-safety, UX expectations_
 
 ## Validation commands
 \`\`\`bash
 # Fast: unit tests only (no Docker needed)
-scripts/harness/mvn -q test -Dtest="TODO"
+scripts/harness/mvn -q test -Dtest="${module_class}UnitTest"
 
 # Slice tests (Docker required)
-scripts/harness/mvn -q test -Dtest="TODO"
+scripts/harness/mvn -q test -Dtest="${module_class}SliceTest"
 
 # Module test (Docker required)
 scripts/harness/mvn -q test -Dtest="${module_class}ModuleTest"
@@ -236,11 +227,9 @@ scripts/harness/full-check
 
 ## Rules for changes in this module
 - Every \`package-info.java\` must have \`@org.jspecify.annotations.NullMarked\`. New subpackages need their own \`package-info.java\`.
-- New public types in root package must be added to the "Public API" table above
 - New internal classes must follow existing patterns per \`.claude/rules/modulith.md\`
 - No other module may directly access this module's owned tables
-- Update this contract when adding public API types, endpoints, tables, or dependencies
-- Keep \`package-info.java\` in sync with the "Allowed dependencies" section above
+- Update this contract when adding endpoints, tables, or behavioral obligations
 - Update the consumer surface section when adding, changing, or removing endpoints or response shapes
 - Integration tests for REST endpoints must include OpenAPI contract validation using \`OpenApiContractValidator.assertResponseMatchesSpec\` — see \`testing.md\` § "OpenAPI contract validation"
 EOF
