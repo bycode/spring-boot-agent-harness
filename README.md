@@ -70,6 +70,8 @@ scripts/harness/init-template \
 
 Use `--dry-run` to preview changes first.
 
+After forking, also edit `scripts/harness/lib/harness.env` and set `HARNESS_ROOT_PACKAGE` to your base package as a slash path (e.g. `com/yourorg/yourservice`) so the PostToolUse hooks resolve module paths correctly.
+
 ## Development
 
 ```bash
