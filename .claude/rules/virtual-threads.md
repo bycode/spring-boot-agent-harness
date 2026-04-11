@@ -20,6 +20,8 @@ Virtual threads are enabled (`spring.threads.virtual.enabled=true`). Java 25 res
 
 - **Hold a JDBC connection during external calls.** See `transactions.md` — use `Propagation.NOT_SUPPORTED` on facade methods that orchestrate external service calls (LLM, HTTP, message broker). Virtual threads make this critical: thousands of concurrent requests can each hold a connection, exhausting the pool in seconds.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags `Executors.newFixedThreadPool(`, `Executors.newCachedThreadPool(`, `CompletableFuture.supplyAsync(`, `ThreadLocal.withInitial(`, and `import reactor.core.publisher.(Mono|Flux)` in any `src/main/java/**/*.java` file.
+
 ## Do
 
 - Write synchronous, blocking code for IO. Let virtual threads handle the concurrency.

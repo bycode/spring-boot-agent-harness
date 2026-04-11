@@ -47,6 +47,8 @@ Use SOLID as design heuristics, not as a precedence rule.
 - No mapping frameworks. Write explicit mappings at boundaries.
 - Work inside-out: domain model first, application logic second, adapters and wiring last.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags imports of `org.mapstruct.*` and `org.modelmapper.*` in any `src/main/java/**/*.java` file.
+
 ## Error handling
 
 - Use unchecked exceptions only. Do not introduce checked exceptions in application code — they fight lambdas, streams, and Spring's own unchecked model.
@@ -63,6 +65,8 @@ Use SOLID as design heuristics, not as a precedence rule.
 - Use a `for` loop instead of a stream when the operation is simple, mutates local state, needs early exit, or gains nothing from the functional form.
 - Avoid nesting `Optional.flatMap` or `Optional.map` chains deeper than two levels. Extract a method or restructure the logic instead.
 - Prefer `Stream.toList()` over `Collectors.toList()`. The former returns an unmodifiable list, consistent with immutability defaults.
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags `Collectors.toList()` in any `src/main/java/**/*.java` file and suggests `Stream.toList()`. The same check also scans for the boundary / null-safety / virtual-thread patterns from the other rule files listed below.
 
 ## Class cohesion
 
@@ -93,9 +97,13 @@ Repo-specific naming:
 - Lombok is limited to annotations that eliminate pure ceremony without hiding behavior: `@Slf4j`, `@With`, `@Builder`.
 - Disallowed annotations: `@Data`, `@Getter`, `@Setter`, `@Value`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@RequiredArgsConstructor`, and similar boilerplate-hiding shortcuts. Records and sealed types handle what those did.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_lombok_denylist — PostToolUse hook flags any disallowed Lombok annotation at the start of a line (`^\s*@Data\b`, etc.) in `src/main/java/**/*.java` files and names every hit in the warning.
+
 ## Logging
 
 - Use Lombok `@Slf4j` when a class genuinely needs logging. Never use `LoggerFactory.getLogger()` manually.
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags `import org.slf4j.LoggerFactory;` in any `src/main/java/**/*.java` file (the only reason to import `LoggerFactory` is a manual `getLogger()` call) and points to `@Slf4j`.
 - Prefer event-based logs over boilerplate method entry/exit logs.
 - Good log points: state changes at module boundaries, external calls, retries and fallbacks, scheduled/background work, security-relevant events, and unexpected conditions.
 - `DEBUG`: local diagnostic detail.
@@ -121,6 +129,8 @@ This project uses JSpecify annotations enforced by NullAway at compile time.
 - Never use older nullness annotation sets such as JSR-305, JetBrains, or FindBugs/SpotBugs annotations.
 - Subpackages do not inherit `@NullMarked`. Every package with Java source files needs its own `package-info.java`.
 - Use `@NullUnmarked` only as a temporary escape hatch. Keep its scope minimal and document why it is needed.
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags imports of `javax.annotation.(Nullable|Nonnull)`, `org.jetbrains.annotations.(Nullable|NotNull)`, and `edu.umd.cs.findbugs.annotations.*` in any `src/main/java/**/*.java` file and points to JSpecify as the project standard.
 
 ## pom.xml conventions
 

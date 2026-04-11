@@ -40,6 +40,8 @@ These are repo standards for new code. They are not all framework deprecations.
 | Full HTTP integration | `RestTestClient` | `TestRestTemplate` |
 | Outbound HTTP client slice | `@RestClientTest` | `@SpringBootTest` for simple client serialization/error-mapping tests |
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_deprecated_test_api — PostToolUse hook flags `@MockBean`, `@SpyBean`, `TestRestTemplate`, `SpringRunner`, `SpringClassRule`, `SpringMethodRule`, and the legacy Testcontainers PostgreSQLContainer import in any `src/test/java/**/*.java` file and names the project-standard replacement from the table above.
+
 ### Import paths (Spring Boot 4.0.3+ / Spring Framework 7.x)
 
 ```java
@@ -337,6 +339,8 @@ Rules:
 - Use `"application/json"` for success responses and `"application/problem+json"` for RFC 9457 error responses.
 - This complements `scripts/harness/check-openapi-drift` — drift detection checks the spec matches the app, contract validation checks individual responses match the spec.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_contract_validator_in_it — PostToolUse hook flags any `*IT.java` file that imports `RestTestClient` or `MockMvcTester` without also importing `OpenApiContractValidator`.
+
 ## Spring AI 2.x testing
 
 This repo is Spring AI 2.x only. Do not add Spring AI 1.x-compatible testing patterns.
@@ -399,6 +403,8 @@ Naming determines which Maven phase runs the test. Get this wrong and unit tests
 - Surefire matches `*Test`, `*Tests`, `Test*` — all tiers except integration run here.
 - Failsafe matches `*IT`, `*ITCase` — only full `@SpringBootTest(RANDOM_PORT)` integration tests.
 - Never name a unit test `*IT` (it won't run during `mvn test`) or an integration test `*Test` (it will run during `mvn test` and fail without Docker).
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_test_naming — PostToolUse hook flags `@SpringBootTest(RANDOM_PORT)` in a non-`*IT` file and `@DataJdbcTest`/`@WebMvcTest`/`@RestClientTest`/`@ApplicationModuleTest` in an `*IT` file, naming the correct rename in each warning.
 
 ## Test organization
 
