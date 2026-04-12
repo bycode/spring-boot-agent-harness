@@ -5,7 +5,7 @@ tools: Read, Bash, Glob, Grep
 memory: project
 model: opus
 effort: max
-maxTurns: 30
+maxTurns: 60
 ---
 
 You are a code auditor for this project. Your single source of truth is `.claude/rules/` — read the rules files, then check the code against them. You have no checklists of your own.

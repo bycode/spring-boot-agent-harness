@@ -15,6 +15,8 @@ The JaCoCo coverage enforcement in `pom.xml` is a project-level quality gate. **
 
 If tests fail the coverage check, write more tests — do not weaken the gate.
 
+Enforcement: scripts/harness/lib/hook-checks.sh::check_jacoco_config_guard — PostToolUse hook that emits a VIOLATION warning when an Edit/Write of pom.xml touches any diff line matching `jacoco-maven-plugin`, `<jacoco.`, `</jacoco`, `COVEREDRATIO`, `<minimum>`, or `<counter>(LINE|BRANCH)</counter>`. Non-blocking — the warning surfaces in the agent's context so it can revert or request user approval.
+
 ## Known acceptable failures
 
 JaCoCo coverage checks can fail for reasons unrelated to test quality. These are expected and do not warrant changing the plugin configuration:

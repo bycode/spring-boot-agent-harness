@@ -1,0 +1,3 @@
+# 4 steps is ≤5 — session blocks are optional.
+-without session blocks
+-Warning: PLAN-0099-fake.md: 4 steps

@@ -1,0 +1,4 @@
++EXEC PLAN CHECKPOINT:
++All items checked. Move to docs/exec-plans/completed/
+-decision log is empty
+-execution notes are empty

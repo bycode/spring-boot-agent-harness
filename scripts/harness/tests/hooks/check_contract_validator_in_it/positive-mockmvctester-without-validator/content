@@ -1,0 +1,14 @@
+package nl.jinsoo.template.notepad;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+
+@SpringBootTest
+class NoteMvcIT {
+
+    @Test
+    void listNotes(MockMvcTester mvc) {
+        mvc.get().uri("/api/notes").assertThat().hasStatusOk();
+    }
+}

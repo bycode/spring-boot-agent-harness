@@ -1,0 +1,2 @@
++CompletableFuture.supplyAsync(
++blocking is fine on virtual threads

@@ -13,14 +13,8 @@ Demonstrates the full vertical slice pattern: domain, use cases, persistence, RE
 ## Complexity
 standard
 
-## Public API (root package)
-
-| Type | Role |
-|------|------|
-| `NotepadAPI` | Module API interface |
-| `Note` | Domain record |
-| `Page` | Generic pagination container |
-| `NoteNotFoundException` | Domain exception |
+## Source of truth
+Public API and allowed dependencies are declared in `package-info.java` via `@ApplicationModule(allowedDependencies = ...)` and enforced by `ApplicationModules.verify()` at test time. See https://docs.spring.io/spring-modulith/reference/fundamentals.html.
 
 ## Hidden packages (implementation details)
 
@@ -30,12 +24,10 @@ standard
 | `persistence/` | `NoteEntity`, `NoteRepository`, `NoteRepositoryAdapter` |
 | `rest/` | `NoteController`, `CreateNoteRequestDTO`, `UpdateNoteRequestDTO`, `NoteResponseDTO`, `NotePageResponseDTO`, `NoteExceptionHandler` |
 
-## Allowed dependencies
-None
-
 ## Cross-module communication
 - **Direct API calls**: None — this module has no dependencies.
-- **Events**: None published or consumed.
+- **Events published**: None.
+- **Events consumed**: None.
 
 ## Owned resources
 - **Database table(s):** `notes` (`V2__create_notes_table.sql`, `V3__add_updated_at_to_notes.sql`)
@@ -82,10 +74,8 @@ scripts/harness/mvn -q verify
 
 ## Rules for changes in this module
 - Every `package-info.java` must have `@org.jspecify.annotations.NullMarked`. New subpackages need their own `package-info.java`.
-- New public types in root package must be added to the "Public API" table above
 - New internal classes must follow existing patterns per `.claude/rules/modulith.md`
 - No other module may directly access this module's owned tables
-- Update this contract when adding public API types, endpoints, tables, or dependencies
-- Keep `package-info.java` in sync with the "Allowed dependencies" section above
+- Update this contract when adding endpoints, tables, or behavioral obligations
 - Update the consumer surface section when adding, changing, or removing endpoints or response shapes
 - Integration tests for REST endpoints must include OpenAPI contract validation using `OpenApiContractValidator.assertResponseMatchesSpec` — see `testing.md` § "OpenAPI contract validation"

@@ -1,0 +1,3 @@
+# check_test_reminder fires on Foo.java; scoped negative only.
+-without session blocks
+-6 steps

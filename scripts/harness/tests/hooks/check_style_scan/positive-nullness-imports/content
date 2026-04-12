@@ -1,0 +1,8 @@
+package nl.jinsoo.template.notepad;
+
+import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public class NoteA {
+}

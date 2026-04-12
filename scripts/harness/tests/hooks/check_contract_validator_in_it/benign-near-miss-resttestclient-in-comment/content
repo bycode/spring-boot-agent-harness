@@ -1,0 +1,18 @@
+package nl.jinsoo.template.notepad;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+/**
+ * This class used to import RestTestClient and MockMvcTester but the
+ * integration test was moved to NoteEndpointOtherIT. See NoteEndpointOtherIT
+ * for the current RestTestClient + OpenApiContractValidator setup.
+ */
+@SpringBootTest
+class NoteEndpointIT {
+
+    @Test
+    void placeholder() {
+        // left intentionally empty — real integration lives elsewhere
+    }
+}

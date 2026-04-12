@@ -1,0 +1,2 @@
++[REDACTED:aws-access-key]
+-AKIAIOSFODNN7EXAMPLE

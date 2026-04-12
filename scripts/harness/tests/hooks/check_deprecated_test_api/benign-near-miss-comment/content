@@ -1,0 +1,12 @@
+package nl.jinsoo.template.notepad;
+
+// Migration notes:
+// - Replaced @MockBean with @MockitoBean
+// - Replaced @SpyBean with @MockitoSpyBean
+// - Deleted SpringClassRule and SpringMethodRule (JUnit 4 rules)
+// - Swapped TestRestTemplate for RestTestClient
+// - Moved import org.testcontainers.containers.PostgreSQLContainer to org.testcontainers.postgresql
+// - Dropped @RunWith(SpringRunner.class)
+class NoteServiceTest {
+    // Pattern names only appear inside comments above; no live annotation/import.
+}

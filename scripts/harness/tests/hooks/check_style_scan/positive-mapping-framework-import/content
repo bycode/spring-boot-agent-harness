@@ -1,0 +1,8 @@
+package nl.jinsoo.template.notepad;
+
+import org.mapstruct.Mapper;
+import org.modelmapper.ModelMapper;
+
+@Mapper
+public interface NoteMapper {
+}

@@ -40,3 +40,4 @@ build/
 ### macOS ###
 .DS_Store
 /.claude/skills/crwl/*
+/.claude/skills/crwl/

@@ -62,8 +62,12 @@ for contract in "$repo_root"/.claude/rules/modules/*.md; do
   done < <(grep -n 'TODO\|{TODO}' "$contract" || true)
 
   # Check B: required sections present
+  # Public API and allowed dependencies are enforced by ApplicationModules.verify()
+  # via @ApplicationModule(allowedDependencies = ...) in package-info.java — the
+  # contract markdown documents behavioral obligations only. See
+  # .claude/rules/modulith.md § "Module contracts".
   complexity="$(grep -A1 '## Complexity' "$contract" | tail -1 | xargs)" || true
-  for section in "## Purpose" "## Public API" "## Allowed dependencies" "## Owned resources" "## Validation commands"; do
+  for section in "## Purpose" "## Source of truth" "## Owned resources" "## Validation commands"; do
     if ! grep -qi "^${section}" "$contract"; then
       fail "missing required section '$section' in $contract_name"
     fi

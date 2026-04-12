@@ -1,0 +1,24 @@
+---
+status: active
+---
+
+# PLAN-0099: fake
+
+## Steps
+
+### Block 1 — Setup
+- [~] Step 1: first
+- [ ] Step 2: second
+- [ ] Step 3: third
+
+### Block 2 — Polish
+- [ ] Step 4: fourth
+- [ ] Step 5: fifth
+- [ ] Step 6: sixth
+
+## Decision log
+
+| Date | Decision | Rationale |
+|---|---|---|
+
+## Execution notes

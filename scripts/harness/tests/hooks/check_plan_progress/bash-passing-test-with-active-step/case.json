@@ -1,0 +1,1 @@
+{"tool_name":"Bash","tool_input":{"command":"scripts/harness/mvn verify"},"tool_result":{"exit_code":0}}

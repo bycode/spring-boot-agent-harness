@@ -1,0 +1,4 @@
++VIOLATION: NoteService.java uses disallowed Lombok annotation(s)
++@AllArgsConstructor
++@NoArgsConstructor
++@RequiredArgsConstructor

@@ -26,6 +26,8 @@ Inbound HTTP adapter. Owns URI design, transport DTOs, RFC-aligned HTTP semantic
 - Never put `@Validated` on `@RestController` classes. Spring MVC 7 validates constrained `@RequestParam` and `@PathVariable` natively — adding `@Validated` causes double-validation and misleading error responses.
 - Do not special-case authentication or authorization in controllers. Leave 401/403 to Spring Security's exception chain — per-controller auth logic bypasses the security filter chain.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags any `src/main/java/**/*.java` file that declares both `@RestController` and `@Validated` at the start of a line.
+
 ### Return types
 
 | Situation | Return type | Why |
@@ -53,6 +55,8 @@ ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest requ
 - Keep nesting shallow — at most one level: `/api/orders/{orderId}/items`. Deeper nesting signals a missing top-level resource.
 - Use action endpoints only when no stable resource model fits: `/api/orders/{id}/cancel`.
 - CORS is handled centrally in `SecurityConfig` (see `security.md`). Do not use `@CrossOrigin` on controllers — it bypasses the security filter chain and creates inconsistent CORS policies.
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_style_scan — PostToolUse hook flags `@CrossOrigin` at the start of a line in any `src/main/java/**/*.java` file, and also flags any `@(Get|Post|Put|Delete|Patch|Request)Mapping("path")` where `path` does not start with `/api/`.
 
 ## Collection endpoints
 
@@ -120,13 +124,15 @@ Validation errors should expose an `errors` extension array. Translate Bean Vali
 
 ## OpenAPI annotations (mandatory)
 
-- Every controller: `@Tag`. Every operation: `@Operation(operationId = "...", ...)` with a unique `operationId`.
+- Every controller: `@Tag`. Every operation: `@Operation(...)`. Uniqueness of `operationId` is verified by `scripts/harness/check-openapi-drift` when the generated `docs/generated/openapi.json` is refreshed — the JVM-level drift check is the authoritative gate.
 - Every operation must document the successful response plus known `4xx`/`5xx` responses.
 - Every request and response DTO must have `@Schema`. Add examples for non-trivial payloads.
 - Document per-operation security explicitly. Public endpoints must be explicit, not implicit.
 - Document pagination, filtering, ordering, and semantically important headers (`Location`, `ETag`, `WWW-Authenticate`, `Retry-After`, `RateLimit`, `RateLimit-Policy`, `Link`, `Deprecation`, `Sunset`, `Idempotency-Key`).
 - Keep `docs/generated/openapi.json` in sync — validated by `scripts/harness/check-openapi-drift`.
 - Use springdoc-openapi v3.x for Spring Boot 4 (v2.x is for Boot 3).
+
+Nudge: scripts/harness/lib/hook-checks.sh::check_openapi_annotations_present — PostToolUse hook flags any src/main/java/**/rest/*Controller.java that declares @RestController without a @Tag, or a @<Verb>Mapping method without a preceding @Operation annotation. Nothing more — operationId uniqueness and tag-list completeness belong to the JVM drift check.
 
 ## Accepted when
 

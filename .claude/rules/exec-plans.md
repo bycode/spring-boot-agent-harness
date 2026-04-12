@@ -103,6 +103,8 @@ Context: Facade exposes list/update/delete; Note has updatedAt
 3. **A fresh session should start between blocks.** The agent completing a block should write execution notes (see below), then the next block can be picked up in a new session or delegated to a sub-agent.
 4. Plans with ≤5 steps do not need blocks — a flat checklist is fine.
 
+Nudge: scripts/harness/lib/hook-checks.sh::check_session_block_structure — PostToolUse hook flags plan files with more than 5 top-level steps that contain no ### Block N headers.
+
 ### Sub-agent delegation for blocks
 
 For plans with 3+ blocks, prefer delegating each block to a sub-agent rather than executing everything in one session. The orchestrating agent:

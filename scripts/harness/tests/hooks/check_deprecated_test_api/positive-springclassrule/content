@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import org.junit.ClassRule;
+import org.springframework.test.context.junit4.rules.SpringClassRule;
+
+class LegacyRuleTest {
+    @ClassRule
+    public static final SpringClassRule classRule = new SpringClassRule();
+}

@@ -1,0 +1,1 @@
++VIOLATION: NoteSnapshot.java uses disallowed Lombok annotation(s): @Value

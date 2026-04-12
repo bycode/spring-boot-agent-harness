@@ -1,0 +1,3 @@
+# Plan has 6 steps but they are grouped under ### Block 1 / ### Block 2.
+-Warning: PLAN-0099-fake.md: 6 steps
+-without session blocks

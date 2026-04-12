@@ -1,0 +1,2 @@
++VIOLATION: WidgetController.java: @RestController without @Tag
++.claude/rules/rest.md

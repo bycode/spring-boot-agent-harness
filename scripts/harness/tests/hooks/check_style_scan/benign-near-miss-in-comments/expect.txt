@@ -1,0 +1,14 @@
+-NoteDoc2.java: legacy
+-NoteDoc2.java: JetBrains
+-NoteDoc2.java: FindBugs
+-NoteDoc2.java: Collectors.toList()
+-NoteDoc2.java: manual LoggerFactory
+-NoteDoc2.java: @CrossOrigin
+-NoteDoc2.java: @Validated
+-NoteDoc2.java: does not start with /api/
+-NoteDoc2.java: reactor.core.publisher
+-NoteDoc2.java: import org.mapstruct
+-NoteDoc2.java: Executors.newFixedThreadPool
+-NoteDoc2.java: Executors.newCachedThreadPool
+-NoteDoc2.java: CompletableFuture.supplyAsync
+-NoteDoc2.java: ThreadLocal.withInitial

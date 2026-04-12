@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import lombok.Data;
+
+@Data
+public class NoteHolder {
+    private String title;
+    private String body;
+}

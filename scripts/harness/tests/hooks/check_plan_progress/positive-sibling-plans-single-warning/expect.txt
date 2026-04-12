@@ -1,0 +1,4 @@
++EXEC PLAN CHECKPOINT:
++VIOLATION: PLAN-0003-third.md: No step marked [~] in-progress
+-VIOLATION: PLAN-0001-first.md: No step marked [~] in-progress
+-VIOLATION: PLAN-0002-second.md: No step marked [~] in-progress

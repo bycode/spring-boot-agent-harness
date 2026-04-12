@@ -1,0 +1,11 @@
+package nl.jinsoo.template.notepad;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class NoteB {
+    public List<String> names() {
+        return Stream.of("a", "b").collect(Collectors.toList());
+    }
+}

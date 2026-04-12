@@ -1,0 +1,15 @@
+-NoteController.java: legacy
+-NoteController.java: JetBrains
+-NoteController.java: FindBugs
+-NoteController.java: Collectors.toList()
+-NoteController.java: manual LoggerFactory
+-NoteController.java: @CrossOrigin
+-NoteController.java: @Validated
+-NoteController.java: does not start with /api/
+-NoteController.java: reactor.core.publisher
+-NoteController.java: import org.mapstruct
+-NoteController.java: import org.modelmapper
+-NoteController.java: Executors.newFixedThreadPool
+-NoteController.java: Executors.newCachedThreadPool
+-NoteController.java: CompletableFuture.supplyAsync
+-NoteController.java: ThreadLocal.withInitial

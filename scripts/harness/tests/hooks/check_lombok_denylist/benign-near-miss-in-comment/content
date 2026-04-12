@@ -1,0 +1,20 @@
+package nl.jinsoo.template.notepad;
+
+/**
+ * This class used to use @Data and @Getter but those were removed
+ * per code-style.md. Historical note only — do not reintroduce.
+ *
+ * Also don't use @AllArgsConstructor or @RequiredArgsConstructor.
+ */
+// @Setter was tried once — produced a bug, see NOTE-123.
+public class NoteDoc {
+    private final String title;
+
+    public NoteDoc(String title) {
+        this.title = title;
+    }
+
+    public String title() {
+        return title;
+    }
+}

@@ -1,0 +1,3 @@
++EXEC PLAN CHECKPOINT:
++VIOLATION: PLAN-0099-fake.md: No step marked [~] in-progress
++PLAN: PLAN-0099-fake.md: 1 done, 0 active, 2 remaining

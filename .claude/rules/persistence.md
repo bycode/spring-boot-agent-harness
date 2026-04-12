@@ -40,6 +40,8 @@ public record OrderEntity(@Id Long id, String customerId, String status) {
 
 ## Schema management — Flyway
 
+> **One-time setup after cloning:** run `scripts/harness/install-git-hooks` to install the pre-commit guard that blocks edits to applied migrations. The guard delegates to `check_migration_edit_guard` in `scripts/harness/lib/hook-checks.sh`.
+
 All schema changes are managed by Flyway migrations. Never use `schema.sql` for DDL.
 
 - Migrations live in `src/main/resources/db/migration/`
@@ -47,6 +49,8 @@ All schema changes are managed by Flyway migrations. Never use `schema.sql` for 
 - Never edit a migration that has been applied — always create a new one
 - Use PostgreSQL-native types: `BIGSERIAL` for auto-generated IDs, `TEXT` for unbounded strings, `TIMESTAMPTZ` for timestamps
 - Use lowercase column names in DDL — Spring Data JDBC quotes identifiers, and PostgreSQL is case-sensitive for quoted identifiers
+
+Enforcement: scripts/harness/lib/hook-checks.sh::check_migration_edit_guard — blocking pre-commit guard that refuses commits containing modifications (not additions) to files under src/main/resources/db/migration/. Install once per clone with `scripts/harness/install-git-hooks`; the installer is idempotent and preserves any pre-existing .git/hooks/pre-commit content. Override for the rare legitimate rename with `git commit --no-verify` and document the rationale in the plan's decision log.
 
 ## PostgreSQL + Spring Data JDBC notes
 

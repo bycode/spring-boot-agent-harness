@@ -70,6 +70,8 @@ scripts/harness/init-template \
 
 Use `--dry-run` to preview changes first.
 
+The harness uses fork-agnostic glob patterns (e.g. `*src/main/java/*.java`) that match any forked base package — no rename needed.
+
 ## Development
 
 ```bash

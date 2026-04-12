@@ -1,0 +1,9 @@
+package nl.jinsoo.template.notepad;
+
+import reactor.core.publisher.Mono;
+
+public class NoteD {
+    public Mono<String> hello() {
+        return Mono.just("hi");
+    }
+}

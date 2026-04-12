@@ -1,0 +1,5 @@
+package nl.jinsoo.template.notepad;
+
+public class NoteTl {
+    private static final ThreadLocal<String> CURRENT = ThreadLocal.withInitial(() -> "");
+}

@@ -1,0 +1,8 @@
+-Project-standard Spring Boot 4
+-@MockBean
+-@SpyBean
+-TestRestTemplate
+-SpringRunner
+-SpringClassRule
+-SpringMethodRule
+-Testcontainers 2.x

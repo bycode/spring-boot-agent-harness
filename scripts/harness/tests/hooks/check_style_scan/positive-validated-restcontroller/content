@@ -1,0 +1,15 @@
+package nl.jinsoo.template.notepad.rest;
+
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Validated
+@RestController
+public class NoteController {
+
+    @GetMapping("/api/notes")
+    public String list() {
+        return "[]";
+    }
+}

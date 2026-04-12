@@ -1,0 +1,11 @@
+package nl.jinsoo.template.notepad;
+
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+// Production code with deliberately deprecated test imports.
+// The hook must not fire here because the path is not under src/test/java.
+public class NoteService {
+    @MockBean
+    NoteRepository repo;
+}

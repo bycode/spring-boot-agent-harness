@@ -25,6 +25,8 @@ paths:
 - Keep public monitoring endpoints narrow
 - Preserve the explicit security configuration model on extension
 
+Enforcement: scripts/harness/lib/scrub-secrets.sh, invoked by scripts/harness/run-cmd, redacts AWS access keys, GitHub tokens, JWTs, Bearer headers, AWS_SECRET_ACCESS_KEY env assignments, and PEM private-key blocks from subprocess output before emission to the agent. Raw output is preserved in target/runner.log for local debugging. Allowlist for known test fixtures lives at scripts/harness/lib/scrub-secrets-allowlist.txt.
+
 ## Runtime baseline
 - Dev profile: `localhost:8080`, PostgreSQL on `localhost:5433` (via Docker Compose)
 - Prod profile: datasource via `DB_URL`, `DB_USER`, `DB_PASSWORD`; port via `PORT` or `8080`

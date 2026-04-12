@@ -1,0 +1,2 @@
++Collectors.toList()
++prefer Stream.toList()

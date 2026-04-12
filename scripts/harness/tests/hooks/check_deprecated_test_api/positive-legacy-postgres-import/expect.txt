@@ -1,0 +1,3 @@
++VIOLATION: org.testcontainers.containers.PostgreSQLContainer is the Testcontainers 1.x path
++org.testcontainers.postgresql.PostgreSQLContainer
++Testcontainers 2.x import paths

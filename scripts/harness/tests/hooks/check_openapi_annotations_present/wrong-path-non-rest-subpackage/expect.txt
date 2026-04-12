@@ -1,0 +1,2 @@
+-FooController.java: @RestController without @Tag
+-FooController.java: list() uses @GetMapping without a preceding @Operation
