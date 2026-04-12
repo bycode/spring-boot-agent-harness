@@ -3,6 +3,7 @@ package nl.jinsoo.template;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaPackage;
@@ -14,6 +15,10 @@ import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.transaction.annotation.Transactional;
 
 class ArchitectureRulesTest {
@@ -21,6 +26,11 @@ class ArchitectureRulesTest {
   private final JavaClasses classes =
       new ClassFileImporter()
           .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .importPackages("nl.jinsoo.template");
+
+  private final JavaClasses testClasses =
+      new ClassFileImporter()
+          .withImportOption(location -> location.contains("/test-classes/"))
           .importPackages("nl.jinsoo.template");
 
   @Test
@@ -97,5 +107,41 @@ class ArchitectureRulesTest {
         .beAnnotatedWith(Transactional.class)
         .allowEmptyShould(true)
         .check(classes);
+  }
+
+  @Test
+  void randomPortTestsMustBeNamedIT() {
+    classes()
+        .that(haveSpringBootTestWithRandomPort())
+        .should()
+        .haveSimpleNameEndingWith("IT")
+        .allowEmptyShould(true)
+        .check(testClasses);
+  }
+
+  @Test
+  void sliceAndModuleTestsMustNotBeNamedIT() {
+    noClasses()
+        .that()
+        .haveSimpleNameEndingWith("IT")
+        .should()
+        .beAnnotatedWith(DataJdbcTest.class)
+        .orShould()
+        .beAnnotatedWith(WebMvcTest.class)
+        .orShould()
+        .beAnnotatedWith(ApplicationModuleTest.class)
+        .allowEmptyShould(true)
+        .check(testClasses);
+  }
+
+  private static DescribedPredicate<JavaClass> haveSpringBootTestWithRandomPort() {
+    return new DescribedPredicate<>("are annotated with @SpringBootTest(RANDOM_PORT)") {
+      @Override
+      public boolean test(JavaClass cls) {
+        return cls.isAnnotatedWith(SpringBootTest.class)
+            && cls.getAnnotationOfType(SpringBootTest.class).webEnvironment()
+                == SpringBootTest.WebEnvironment.RANDOM_PORT;
+      }
+    };
   }
 }

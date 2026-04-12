@@ -404,7 +404,7 @@ Naming determines which Maven phase runs the test. Get this wrong and unit tests
 - Failsafe matches `*IT`, `*ITCase` — only full `@SpringBootTest(RANDOM_PORT)` integration tests.
 - Never name a unit test `*IT` (it won't run during `mvn test`) or an integration test `*Test` (it will run during `mvn test` and fail without Docker).
 
-Nudge: scripts/harness/lib/hook-checks.sh::check_test_naming — PostToolUse hook flags `@SpringBootTest(RANDOM_PORT)` in a non-`*IT` file and `@DataJdbcTest`/`@WebMvcTest`/`@RestClientTest`/`@ApplicationModuleTest` in an `*IT` file, naming the correct rename in each warning.
+Enforcement: `ArchitectureRulesTest.randomPortTestsMustBeNamedIT` and `sliceAndModuleTestsMustNotBeNamedIT` — ArchUnit rules that fail the build when `@SpringBootTest(RANDOM_PORT)` appears in a non-`*IT` class, or `@DataJdbcTest`/`@WebMvcTest`/`@ApplicationModuleTest` appears in an `*IT` class.
 
 ## Test organization
 

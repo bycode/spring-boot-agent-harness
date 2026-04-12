@@ -1,3 +1,0 @@
-+VIOLATION: NoteControllerIT.java uses @WebMvcTest
-+Rename NoteControllerIT → NoteControllerTest
-+Test class naming conventions

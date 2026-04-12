@@ -26,7 +26,8 @@ Public API and allowed dependencies are declared in `package-info.java` via `@Ap
 
 ## Cross-module communication
 - **Direct API calls**: None — this module has no dependencies.
-- **Events**: None published or consumed.
+- **Events published**: None.
+- **Events consumed**: None.
 
 ## Owned resources
 - **Database table(s):** `notes` (`V2__create_notes_table.sql`, `V3__add_updated_at_to_notes.sql`)

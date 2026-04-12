@@ -236,48 +236,6 @@ check_plan_progress() {
 }
 
 # -----------------------------------------------------------------------------
-# check_test_naming
-# Flags test files whose annotation contents mismatch the naming convention:
-#   - @SpringBootTest(...RANDOM_PORT) in a *Test file → should be *IT
-#   - @DataJdbcTest/@WebMvcTest/@RestClientTest/@ApplicationModuleTest in
-#     an *IT file → should be *Test
-# Anchors: annotation must appear at start of a (possibly indented) line so
-# the same token in a `// comment` or string literal stays silent.
-# Rule: testing.md § "Test class naming conventions"
-# -----------------------------------------------------------------------------
-check_test_naming() {
-  _guard_edit_write_java test || return 0
-  [ -f "$FILE" ] || return 0
-  local bn
-  bn=$(basename "$FILE" .java)
-  local out=""
-
-  if [[ "$bn" != *IT ]]; then
-    # Integration annotation in a *Test file.
-    if grep -Eq '^[[:space:]]*@SpringBootTest\b[^/]*RANDOM_PORT' "$FILE" 2>/dev/null; then
-      out="${out}VIOLATION: ${bn}.java uses @SpringBootTest(RANDOM_PORT) but the basename is not *IT — integration annotations belong in *IT.java files. Rename ${bn} → ${bn%Test}IT (see .claude/rules/testing.md § \"Test class naming conventions\")."
-    fi
-  fi
-
-  if [[ "$bn" == *IT ]]; then
-    # Slice/module annotation in an *IT file — first match wins. The helper
-    # returns each matching name on its own line in caller order, so `head -n1`
-    # picks the first one in that order.
-    local annfound
-    annfound=$(_grep_annotation_at_line_start "$FILE" \
-      DataJdbcTest WebMvcTest RestClientTest ApplicationModuleTest \
-      | head -n1)
-    if [[ -n "$annfound" ]]; then
-      [[ -n "$out" ]] && out="${out}\n\n"
-      out="${out}VIOLATION: ${bn}.java uses @${annfound} but the basename ends in IT — slice/module annotations belong in *Test.java files. Rename ${bn} → ${bn%IT}Test (see .claude/rules/testing.md § \"Test class naming conventions\")."
-    fi
-  fi
-
-  [[ -n "$out" ]] && printf '%s' "$out"
-  return 0
-}
-
-# -----------------------------------------------------------------------------
 # check_deprecated_test_api
 # Warns when a test file uses Spring Boot 3 / JUnit 4 era APIs that have
 # project-standard replacements in Spring Boot 4 / Framework 7 / JUnit 6.

@@ -32,7 +32,6 @@ export TOOL FILE CMD INPUT REPO_ROOT
 CHECKS=(
   check_test_reminder
   check_plan_progress
-  check_test_naming
   check_deprecated_test_api
   check_contract_validator_in_it
   check_lombok_denylist
